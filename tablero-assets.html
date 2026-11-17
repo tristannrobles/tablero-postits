@@ -45,6 +45,11 @@ main{flex:1;display:flex;min-height:0;position:relative}
 .note{position:absolute;width:220px;min-height:132px;padding:11px 12px;border-radius:7px;color:#1b1b22;box-shadow:0 2px 4px rgba(0,0,0,.12),0 8px 18px -6px rgba(0,0,0,.32);cursor:grab;touch-action:none;user-select:none;transition:box-shadow .15s;display:flex;flex-direction:column;gap:5px}
 .note:hover{box-shadow:0 4px 10px rgba(0,0,0,.18),0 12px 24px -6px rgba(0,0,0,.4)}
 .note.sel{outline:3px solid var(--acc);outline-offset:2px;z-index:10}
+.q-dup{position:absolute;left:50%;transform:translateX(-50%);width:24px;height:24px;border-radius:50%;background:var(--acc);color:var(--accink);border:2px solid var(--panel);font-weight:800;font-size:15px;line-height:1;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.3);z-index:15;padding:0;transition:transform .12s}
+.q-dup:hover{transform:translateX(-50%) scale(1.15)}
+.q-dup.top{top:-14px}
+.q-dup.bot{bottom:-14px}
+.note.sel .q-dup{display:flex}
 .note b{display:block;font-weight:800;font-size:15px;line-height:1.22;overflow-wrap:anywhere}
 .note.is-title{min-height:78px;padding:16px 16px;justify-content:center;align-items:center;text-align:center}
 .note.is-title b{font-size:21px;line-height:1.18;margin:0}
@@ -732,6 +737,27 @@ function render(){
       d.appendChild(m);
     }
 
+    // Botones + en circulito arriba y abajo al seleccionar la nota
+    ["top","bot"].forEach(pos=>{
+      const qb=document.createElement("button");
+      qb.type="button";
+      qb.className="q-dup "+pos;
+      qb.textContent="+";
+      qb.title=pos==="top"?"Duplicar nota arriba":"Duplicar nota abajo";
+      qb.onpointerdown=ev=>ev.stopPropagation();
+      qb.onclick=ev=>{
+        ev.stopPropagation();
+        recordUndo();
+        const h=d.offsetHeight||(isTitle?78:NOTE_H);
+        const ny=pos==="top"?Math.round(n.y-h-14):Math.round(n.y+h+14);
+        const copy={...JSON.parse(JSON.stringify(n)),id:Date.now(),x:n.x,y:ny};
+        S.notes.push(copy);
+        selSet.clear();selSet.add(copy.id);
+        pushNote(copy,0);render();select(copy.id,false);
+      };
+      d.appendChild(qb);
+    });
+
     d.addEventListener("pointerdown",e=>dragNote(e,n,d));
     b.appendChild(d);
   });
@@ -1141,12 +1167,69 @@ $("z-out").onclick=()=>zoomAt(cam.z/1.2);
 $("z-rst").onclick=()=>animateCamTo(cam.x,cam.y,1,240);
 $("z-fit").onclick=()=>fitAll();
 
+// --- Copiar y Pegar notas (Ctrl + C / Ctrl + V, incluso entre subgrupos) ---
+let clipData=null;
+function copySelectedNotes(){
+  const targets=S.notes.filter(x=>selSet.has(x.id)||x.id===sel);
+  if(!targets.length)return;
+  clipData={sub:curSub,count:0,notes:cloneNotes(targets)};
+  try{localStorage.setItem(KEY+"-clip",JSON.stringify(clipData))}catch(e){}
+}
+function pasteNotes(){
+  if(!clipData){
+    try{const r=localStorage.getItem(KEY+"-clip");if(r)clipData=JSON.parse(r)}catch(e){}
+  }
+  if(!clipData||!Array.isArray(clipData.notes)||!clipData.notes.length)return;
+  recordUndo();
+  clipData.count=(clipData.count||0)+1;
+  const sameSub=clipData.sub===curSub;
+  const offset=sameSub?28*clipData.count:0;
+
+  // Si pegamos en otro subgrupo, centramos el grupo de notas en la vista actual manteniendo su diseño relativo
+  let dx=offset, dy=offset;
+  if(!sameSub){
+    const sc=$("scroll"),rect=sc.getBoundingClientRect();
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    clipData.notes.forEach(n=>{
+      minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);
+      maxX=Math.max(maxX,n.x+NOTE_W);maxY=Math.max(maxY,n.y+NOTE_H);
+    });
+    const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+    const vx=(rect.width/2-cam.x)/cam.z, vy=(rect.height/2-cam.y)/cam.z;
+    dx=Math.round(vx-cx)+(clipData.count>1?24*(clipData.count-1):0);
+    dy=Math.round(vy-cy)+(clipData.count>1?24*(clipData.count-1):0);
+  }
+  try{localStorage.setItem(KEY+"-clip",JSON.stringify(clipData))}catch(e){}
+
+  selSet.clear();
+  const baseId=Date.now();
+  clipData.notes.forEach((n,i)=>{
+    const copy={...cloneNotes(n),id:baseId+i,x:Math.round(n.x+dx),y:Math.round(n.y+dy)};
+    S.notes.push(copy);
+    pushNote(copy,0);
+    selSet.add(copy.id);
+    sel=copy.id;
+  });
+  render();
+  if(sel){$("panel").classList.add("open");syncPanelFromNote(cur())}
+}
+
 window.addEventListener("keydown",e=>{
   const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||"");
   if(e.code==="Space"&&!typing){e.preventDefault();spaceDown=true;$("scroll").classList.add("space-ready")}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"&&!typing){
     e.preventDefault();
     undo();
+    return;
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="c"&&!typing&&(sel||selSet.size)){
+    e.preventDefault();
+    copySelectedNotes();
+    return;
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="v"&&!typing){
+    e.preventDefault();
+    pasteNotes();
     return;
   }
   if((e.ctrlKey||e.metaKey)&&(e.key==="="||e.key==="+"||e.key==="-"||e.key==="0")){
