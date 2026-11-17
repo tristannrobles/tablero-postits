@@ -260,10 +260,12 @@ let catColors={
   "UI":COLORS[2]
 };
 let curSub="principal";
-let S={notes:[],filter:"Todos"},sel=null,selSet=new Set(),sb=null,channel=null,saveTimers={},qStr="";
-let undoStack=[];
+let S={notes:[],filter:"Todos"},sel=null,selSet=new Set(),sb=null,channel=null,saveTimers={},pendingRows={},qStr="";
+let undoStack=[], cloudReqId=0;
 let cam={x:0,y:0,z:1},camAnim=null,spaceDown=false;
 let myId="u_"+Math.random().toString(36).slice(2,9), myColor=PEER_COLORS[Math.floor(Math.random()*PEER_COLORS.length)];
+let myDevId="";
+try{myDevId=localStorage.getItem("tablero-dev-id")||"";if(!myDevId){myDevId="d_"+Math.random().toString(36).slice(2,10);localStorage.setItem("tablero-dev-id",myDevId)}}catch(e){myDevId=myId}
 let peers={}, lastCursorSent=0;
 const MIN_Z=0.25, MAX_Z=2.5, NOTE_W=220, NOTE_H=136;
 const $=id=>document.getElementById(id);
@@ -490,14 +492,33 @@ async function saveSubgroupsRemote(){
     body:JSON.stringify(payload),color:"#ffd966",x:0,y:0,updated_at:new Date().toISOString()
   });
 }
+function clearPeerCursors(){
+  Object.values(peers).forEach(p=>{clearTimeout(p.timer);p.el.remove()});
+  peers={};
+}
+function flushPendingSaves(){
+  Object.keys(saveTimers).forEach(id=>{
+    clearTimeout(saveTimers[id]);
+    delete saveTimers[id];
+  });
+  const rows=Object.values(pendingRows);
+  pendingRows={};
+  if(sb&&rows.length){
+    sb.from("notes").upsert(rows).then(({error})=>{if(error)setStatus("err","Error al guardar en nube")});
+  }
+}
 function switchSubgroup(id){
   if(curSub===id)return;
+  flushPendingSaves();
+  clearPeerCursors();
   curSub=id;
   sel=null;selSet.clear();undoStack=[];$("panel").classList.remove("open");
   renderSubgroups();
   loadLocalBoard();
   render();
-  initCloud();
+  const curObj=subgroups.find(s=>s.id===curSub);
+  if(sb)setStatus("ok",`En vivo · ${curObj?curObj.name:curSub}`);
+  fetchSubgroupNotes(id);
 }
 
 // Drawer izquierdo: abrir al acercar el mouse al borde izquierdo o con el botón
@@ -524,8 +545,9 @@ $("new-sub-in").addEventListener("keydown",e=>{if(e.key==="Enter")createSubFromI
 function loadLocalBoard(){
   try{const subs=localStorage.getItem(KEY+"-subs");if(subs)unpackMeta(subs)}catch(e){}
   S={notes:[],filter:"Todos"};
-  try{const r=localStorage.getItem(KEY+"-"+curSub);if(r){S=JSON.parse(r);if(S.filter==="Todas")S.filter="Todos"}}catch(e){}
-  if(!S.notes.length&&curSub==="principal"){
+  let hadLocal=false;
+  try{const r=localStorage.getItem(KEY+"-"+curSub);if(r){S=JSON.parse(r);hadLocal=true;if(S.filter==="Todas")S.filter="Todos"}}catch(e){}
+  if(!hadLocal&&!S.notes.length&&curSub==="principal"){
     S.notes=[
       {id:1,t:"Torre de arco nivel 1",cat:"Torres",who:"Ana",st:"",link:"",body:"[x] Boceto base\n[ ] Animación de disparo\nRevisar escala con el mapa.",color:COLORS[0],x:60,y:60},
       {id:2,t:"Torre de hielo",cat:"Torres",who:"Beto",st:"",link:"",body:"[ ] Definir paleta de azules",color:COLORS[0],x:320,y:60},
@@ -535,23 +557,46 @@ function loadLocalBoard(){
   }
   S.notes.forEach(n=>{if(n.cat)n.color=getCatColor(n.cat,n.color)});
 }
-function save(){try{localStorage.setItem(KEY+"-"+curSub,JSON.stringify(S))}catch(e){}}
+function save(boardId=curSub,stateObj=S){try{localStorage.setItem(KEY+"-"+boardId,JSON.stringify(stateObj))}catch(e){}}
 
-async function pushNote(n,delay=0){
-  save();
+async function pushNote(n,delay=0,boardOverride){
+  const targetBoard=boardOverride||curSub;
+  if(targetBoard===curSub)save(targetBoard,S);
   if(!sb)return;
+  const row={id:n.id,board:targetBoard,t:n.t||"",cat:n.cat||"",who:n.who||"",st:n.st==="titulo"?"titulo":"",link:n.link||"",body:n.body||"",color:n.color||COLORS[0],x:Math.round(n.x||0),y:Math.round(n.y||0),updated_at:new Date().toISOString()};
+  pendingRows[n.id]=row;
   clearTimeout(saveTimers[n.id]);
   saveTimers[n.id]=setTimeout(async()=>{
-    const row={id:n.id,board:curSub,t:n.t||"",cat:n.cat||"",who:n.who||"",st:n.st==="titulo"?"titulo":"",link:n.link||"",body:n.body||"",color:n.color||COLORS[0],x:Math.round(n.x||0),y:Math.round(n.y||0),updated_at:new Date().toISOString()};
-    const {error}=await sb.from("notes").upsert(row);
+    delete saveTimers[n.id];
+    const rToSend=pendingRows[n.id]||row;
+    delete pendingRows[n.id];
+    const {error}=await sb.from("notes").upsert(rToSend);
     if(error)setStatus("err","Error al guardar en nube");
   },delay);
 }
 async function deleteNotesRemote(ids){
-  save();
+  save(curSub,S);
+  ids.forEach(id=>{clearTimeout(saveTimers[id]);delete saveTimers[id];delete pendingRows[id]});
   if(!sb||!ids.length)return;
   const {error}=await sb.from("notes").delete().in("id",ids);
   if(error)setStatus("err","Error al borrar en nube");
+}
+
+async function fetchSubgroupNotes(targetSub){
+  if(!sb)return;
+  const reqId=++cloudReqId;
+  try{
+    const {data,error}=await sb.from("notes").select("*").eq("board",targetSub).order("id",{ascending:true});
+    if(error)throw error;
+    // Si el usuario cambió rápido a otro subgrupo mientras cargaba, descartamos esta respuesta vieja
+    if(reqId!==cloudReqId||curSub!==targetSub)return;
+    S.notes=(data||[]).map(r=>({id:Number(r.id),t:r.t,cat:r.cat,who:r.who,st:r.st==="titulo"?"titulo":"",link:r.link,body:r.body,color:r.cat?getCatColor(r.cat,r.color):r.color,x:r.x,y:r.y}));
+    save(targetSub,S);
+    render();
+    if(sel&&S.notes.some(n=>n.id===sel))select(sel,false);
+  }catch(err){
+    console.error(err);
+  }
 }
 
 async function initCloud(){
@@ -562,7 +607,7 @@ async function initCloud(){
   }
   try{
     setStatus("wait","Conectando…");
-    if(channel&&sb){await sb.removeChannel(channel)}
+    if(channel&&sb){await sb.removeChannel(channel);channel=null}
     if(!sb)sb=window.supabase.createClient(cfg.url.trim(),cfg.key.trim());
 
     // Cargar lista de subgrupos y colores por categoría
@@ -574,19 +619,9 @@ async function initCloud(){
       await saveSubgroupsRemote();
     }
 
-    // Cargar notas del subgrupo actual
-    const {data,error}=await sb.from("notes").select("*").eq("board",curSub).order("id",{ascending:true});
-    if(error)throw error;
-    if(data&&data.length){
-      S.notes=data.map(r=>({id:Number(r.id),t:r.t,cat:r.cat,who:r.who,st:r.st==="titulo"?"titulo":"",link:r.link,body:r.body,color:r.cat?getCatColor(r.cat,r.color):r.color,x:r.x,y:r.y}));
-      save();render();
-      if(sel)select(sel,false);
-    }else if(S.notes.length){
-      const rows=S.notes.map(n=>({id:n.id,board:curSub,t:n.t||"",cat:n.cat||"",who:n.who||"",st:n.st==="titulo"?"titulo":"",link:n.link||"",body:n.body||"",color:n.color||COLORS[0],x:Math.round(n.x||0),y:Math.round(n.y||0)}));
-      await sb.from("notes").upsert(rows);
-    }
+    await fetchSubgroupNotes(curSub);
 
-    // Canal en tiempo real: cambios en base de datos + Cursores en vivo (Broadcast)
+    // Canal en tiempo real único: cambios en base de datos + Cursores en vivo (Broadcast)
     channel=sb.channel("room-global",{config:{broadcast:{self:false}}})
       .on("postgres_changes",{event:"*",schema:"public",table:"notes"},payload=>{
         const r=payload.new||payload.old;
@@ -598,22 +633,26 @@ async function initCloud(){
         }
         if(payload.eventType==="DELETE"){
           const delId=Number(payload.old.id);
-          S.notes=S.notes.filter(n=>n.id!==delId);
-          selSet.delete(delId);
-          if(sel===delId){sel=null;$("panel").classList.remove("open")}
-          save();render();
+          if(S.notes.some(n=>n.id===delId)){
+            S.notes=S.notes.filter(n=>n.id!==delId);
+            selSet.delete(delId);
+            if(sel===delId){sel=null;$("panel").classList.remove("open")}
+            save(curSub,S);render();
+          }
         }else if(payload.new&&payload.new.board===curSub){
           const nr=payload.new;
           const incoming={id:Number(nr.id),t:nr.t,cat:nr.cat,who:nr.who,st:nr.st==="titulo"?"titulo":"",link:nr.link,body:nr.body,color:nr.cat?getCatColor(nr.cat,nr.color):nr.color,x:nr.x,y:nr.y};
           const idx=S.notes.findIndex(n=>n.id===incoming.id);
           if(idx>=0)S.notes[idx]=incoming;else S.notes.push(incoming);
-          save();render();
+          save(curSub,S);render();
           if(sel===incoming.id)syncPanelFromNote(incoming);
         }
       })
       .on("broadcast",{event:"cursor"},({payload})=>{
-        if(!payload||payload.sub!==curSub){
-          if(payload&&peers[payload.id]){peers[payload.id].el.remove();delete peers[payload.id]}
+        // Ignorar nuestro propio cursor (incluso si tenemos varias pestañas abiertas en el mismo ordenador)
+        if(!payload||payload.id===myId||payload.devId===myDevId)return;
+        if(payload.sub!==curSub){
+          if(peers[payload.id]){peers[payload.id].el.remove();delete peers[payload.id]}
           return;
         }
         renderPeerCursor(payload);
@@ -656,7 +695,7 @@ $("scroll").addEventListener("pointermove",e=>{
   const wx=Math.round((e.clientX-rect.left-cam.x)/cam.z);
   const wy=Math.round((e.clientY-rect.top-cam.y)/cam.z);
   channel.send({type:"broadcast",event:"cursor",payload:{
-    id:myId,name:$("me-name").value.trim()||"Invitado/a",color:myColor,x:wx,y:wy,sub:curSub
+    id:myId,devId:myDevId,name:$("me-name").value.trim()||"Invitado/a",color:myColor,x:wx,y:wy,sub:curSub
   }});
 });
 
