@@ -1228,6 +1228,230 @@
       box-shadow: 2px 2px 0 rgba(24, 23, 21, .35)
     }
 
+    /* Botón de Timer junto al avatar y Botón/Ventana de Trofeo (Ranking) abajo a la derecha */
+    .timer-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 99px;
+      border: 2px solid var(--line);
+      background: #fffdf9;
+      color: var(--ink);
+      font-weight: 800;
+      font-size: 12.5px;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      box-shadow: 2px 3px 0 var(--shd);
+      transition: transform .12s, box-shadow .12s, background .15s, color .15s
+    }
+
+    .timer-btn:hover {
+      transform: translate(-1px, -1px) scale(1.03);
+      box-shadow: 3px 4px 0 var(--shd)
+    }
+
+    .timer-btn.running {
+      background: #fa6e61;
+      color: #fffdf9;
+      box-shadow: 2px 3px 0 #5c211b;
+      animation: timerPulse 1.6s infinite ease-in-out
+    }
+
+    @keyframes timerPulse {
+      0%, 100% { filter: brightness(1) }
+      50% { filter: brightness(1.08) }
+    }
+
+    .trophy-btn {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 14px;
+      border-radius: 14px;
+      border: 2px solid #181715;
+      background: #e3b744;
+      color: #181715;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 4px 5px 0 #574518;
+      z-index: 20;
+      user-select: none;
+      transition: transform .14s cubic-bezier(.2, 1.4, .3, 1), box-shadow .14s
+    }
+
+    .trophy-btn:hover {
+      transform: translate(-1px, -2px) scale(1.04);
+      box-shadow: 5px 7px 0 #574518
+    }
+
+    .trophy-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 #574518
+    }
+
+    #rank-pop {
+      position: fixed;
+      right: 18px;
+      bottom: 72px;
+      width: 325px;
+      max-height: calc(100vh - 140px);
+      background: var(--panel);
+      border: 2px solid #181715;
+      border-radius: 16px;
+      box-shadow: 6px 8px 0 var(--shd);
+      padding: 13px 14px 15px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 75;
+      overflow-y: auto
+    }
+
+    #rank-pop.open {
+      display: flex
+    }
+
+    #rank-pop.pop-anim {
+      animation: panelPop .25s cubic-bezier(.2, 1.45, .35, 1)
+    }
+
+    .rank-total {
+      background: var(--bg);
+      border: 2px solid #181715;
+      border-radius: 11px;
+      padding: 8px 11px;
+      font-size: 12.5px;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 2px 3px 0 rgba(24, 23, 21, .16)
+    }
+
+    .rank-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px
+    }
+
+    .rank-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 11px;
+      border-radius: 13px;
+      border: 2px solid #181715;
+      background: #fffdf9;
+      color: #181715;
+      box-shadow: 3px 4px 0 var(--shd)
+    }
+
+    .rank-item.top-1 {
+      background: #e3b744;
+      color: #fffdf9;
+      box-shadow: 4px 5px 0 #574518
+    }
+
+    .rank-item.top-2 {
+      background: #098967;
+      color: #fffdf9;
+      box-shadow: 4px 5px 0 #063b2c
+    }
+
+    .rank-item.top-3 {
+      background: #fa6e61;
+      color: #fffdf9;
+      box-shadow: 4px 5px 0 #5c211b
+    }
+
+    .rank-medal {
+      font-size: 18px;
+      font-weight: 800;
+      min-width: 24px;
+      text-align: center
+    }
+
+    .rank-av {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid #181715;
+      background: #fffdf9;
+      color: #181715;
+      font-size: 13px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, .25)
+    }
+
+    .rank-av img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block
+    }
+
+    .rank-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px
+    }
+
+    .rank-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      font-size: 13.5px;
+      font-weight: 800
+    }
+
+    .rank-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .rank-time {
+      font-variant-numeric: tabular-nums;
+      font-size: 12.5px;
+      background: rgba(0, 0, 0, .18);
+      padding: 2px 7px;
+      border-radius: 7px;
+      flex-shrink: 0
+    }
+
+    .rank-item:not(.top-1):not(.top-2):not(.top-3) .rank-time {
+      background: var(--bg);
+      border: 1.5px solid #181715
+    }
+
+    .rank-bar-bg {
+      height: 6px;
+      border-radius: 99px;
+      background: rgba(0, 0, 0, .18);
+      overflow: hidden
+    }
+
+    .rank-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: currentColor;
+      transition: width .25s
+    }
+
     .user-sel-btn {
       display: inline-flex;
       align-items: center;
@@ -1459,6 +1683,10 @@
     <div class="spacer"></div>
     <div class="user-bar" id="user-bar">
       <div class="online-peers" id="online-peers"></div>
+      <button type="button" class="timer-btn" id="timer-btn" title="Iniciar/Pausar cronómetro de horas trabajadas">
+        <span>⏱️</span>
+        <span id="timer-lbl">00:00:00</span>
+      </button>
       <button type="button" class="av-btn" id="me-av-btn" title="Clic para subir/cambiar el avatar de este usuario">📷</button>
       <button type="button" class="user-sel-btn" id="me-sel-btn" title="Seleccionar usuario activo">
         <span id="me-name-lbl">Elegir usuario</span>
@@ -1537,6 +1765,23 @@
         <button id="z-fit" title="Encuadrar todas las columnas (F)">⊡</button>
         <button id="z-sfx" title="Activar/Desactivar sonidos">🔊</button>
       </div>
+      <button type="button" class="trophy-btn" id="trophy-btn" title="Ver ranking de horas trabajadas">
+        <span>🏆</span>
+        <span>Ranking</span>
+      </button>
+    </div>
+
+    <!-- Ventanita flotante de Ranking de Horas Trabajadas -->
+    <div id="rank-pop" aria-label="Ranking de horas trabajadas">
+      <div class="panel-top">
+        <span class="panel-grip">🏆 Ranking de Horas</span>
+        <button type="button" class="panel-x" id="rank-close" title="Cerrar">✕</button>
+      </div>
+      <div class="rank-total">
+        <span>⏱️ Total del equipo</span>
+        <span id="rank-total-val">0h 00m 00s</span>
+      </div>
+      <div class="rank-list" id="rank-list"></div>
     </div>
 
     <aside id="panel" aria-label="Detalle de la nota">
@@ -1671,6 +1916,8 @@
     let allNotesWho = {}; // Mapa global idNota -> nombre de responsable (de todos los subgrupos)
     let collabs = []; // Lista global de nombres de colaboradores
     let avatars = {}; // Mapa nombreColaborador -> dataURL de su imagen de avatar
+    let workSecs = {}; // Mapa nombreColaborador -> segundos totales trabajados
+    let timerRunning = false, timerLastTick = 0, timerInterval = null, timerSyncTicks = 0;
     let curUser = ""; // Colaborador activo seleccionado en este navegador
     let curSub = "principal";
     let S = { notes: [], filter: "Todos" }, sel = null, selSet = new Set(), sb = null, channel = null, saveTimers = {}, pendingRows = {}, qStr = "";
@@ -1815,6 +2062,7 @@
     function getAllWhos() {
       const set = new Set(collabs.filter(Boolean));
       Object.keys(avatars).forEach(w => { if (w) set.add(w) });
+      Object.keys(workSecs).forEach(w => { if (w) set.add(w) });
       Object.values(allNotesWho).forEach(w => { if (w) set.add(w) });
       S.notes.forEach(n => { const w = (n.who || "").trim(); if (w) set.add(w) });
       subgroups.forEach(sg => {
@@ -1833,6 +2081,144 @@
       return collabs;
     }
 
+    function fmtHMS(sec) {
+      const s = Math.max(0, Math.floor(sec || 0));
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const r = s % 60;
+      return [h, m, r].map(v => String(v).padStart(2, "0")).join(":");
+    }
+
+    function fmtHumanTime(sec) {
+      const s = Math.max(0, Math.floor(sec || 0));
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const r = s % 60;
+      return `${h}h ${String(m).padStart(2, "0")}m ${String(r).padStart(2, "0")}s`;
+    }
+
+    function renderTimerUI() {
+      const btn = $("timer-btn"), lbl = $("timer-lbl");
+      if (!btn || !lbl) return;
+      const secs = curUser ? (workSecs[curUser] || 0) : 0;
+      lbl.textContent = fmtHMS(secs);
+      btn.classList.toggle("running", timerRunning);
+      btn.title = timerRunning
+        ? `⏸ Pausar cronómetro de ${curUser} (registrando tiempo)`
+        : `▶️ Iniciar cronómetro de trabajo${curUser ? " para " + curUser : ""}`;
+    }
+
+    function stopWorkTimer(saveRemote = true) {
+      if (!timerRunning) return;
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+      timerRunning = false;
+      renderTimerUI();
+      if (saveRemote) {
+        saveSubgroupsRemote();
+        sendPresencePing();
+      }
+      if ($("rank-pop").classList.contains("open")) renderRankingPop();
+    }
+
+    function toggleWorkTimer() {
+      if (!curUser) {
+        openUserPop(null);
+        return;
+      }
+      if (timerRunning) {
+        playSfx("drop");
+        stopWorkTimer(true);
+        return;
+      }
+      playSfx("pickup");
+      timerRunning = true;
+      timerLastTick = Date.now();
+      timerSyncTicks = 0;
+      renderTimerUI();
+      sendPresencePing();
+      if ($("rank-pop").classList.contains("open")) renderRankingPop();
+
+      timerInterval = setInterval(() => {
+        if (!timerRunning || !curUser) return;
+        const now = Date.now();
+        const delta = Math.max(1, Math.round((now - timerLastTick) / 1000));
+        timerLastTick = now;
+        workSecs[curUser] = (workSecs[curUser] || 0) + delta;
+        renderTimerUI();
+        if ($("rank-pop").classList.contains("open")) renderRankingPop();
+        timerSyncTicks++;
+        if (timerSyncTicks >= 10) {
+          timerSyncTicks = 0;
+          saveSubgroupsRemote();
+        }
+      }, 1000);
+    }
+
+    function renderRankingPop() {
+      const listEl = $("rank-list"), totEl = $("rank-total-val");
+      if (!listEl || !totEl) return;
+      const names = getAllWhos();
+      const entries = names.map(name => ({
+        name,
+        secs: Math.max(0, Math.floor(workSecs[name] || 0)),
+        working: (name === curUser && timerRunning) || Object.values(activePeers).some(p => p.name === name && p.working)
+      })).sort((a, b) => (b.secs - a.secs) || a.name.localeCompare(b.name));
+
+      const totalSecs = entries.reduce((acc, x) => acc + x.secs, 0);
+      totEl.textContent = fmtHumanTime(totalSecs);
+      listEl.textContent = "";
+
+      if (!entries.length) {
+        listEl.innerHTML = `<div style="font-size:12.5px;color:var(--mute);text-align:center;padding:10px">Aún no hay colaboradores registrados.</div>`;
+        return;
+      }
+
+      const maxSecs = Math.max(1, entries[0].secs);
+      const medals = ["🥇", "🥈", "🥉"];
+
+      entries.forEach((item, idx) => {
+        const row = document.createElement("div");
+        const topCls = idx === 0 && item.secs > 0 ? " top-1" : (idx === 1 && item.secs > 0 ? " top-2" : (idx === 2 && item.secs > 0 ? " top-3" : ""));
+        row.className = "rank-item" + topCls;
+
+        const med = document.createElement("span");
+        med.className = "rank-medal";
+        med.textContent = idx < 3 ? medals[idx] : `#${idx + 1}`;
+
+        const av = document.createElement("span");
+        av.className = "rank-av";
+        fillAvatarEl(av, item.name, "👤");
+
+        const info = document.createElement("div");
+        info.className = "rank-info";
+
+        const rTop = document.createElement("div");
+        rTop.className = "rank-row-top";
+
+        const nm = document.createElement("span");
+        nm.className = "rank-name";
+        nm.textContent = item.name + (item.working ? " ⏱️" : "");
+
+        const tm = document.createElement("span");
+        tm.className = "rank-time";
+        tm.textContent = fmtHumanTime(item.secs);
+
+        rTop.append(nm, tm);
+
+        const barBg = document.createElement("div");
+        barBg.className = "rank-bar-bg";
+        const barFill = document.createElement("div");
+        barFill.className = "rank-bar-fill";
+        const pct = item.secs > 0 ? Math.max(6, Math.round((item.secs / maxSecs) * 100)) : 0;
+        barFill.style.width = pct + "%";
+        barBg.appendChild(barFill);
+
+        info.append(rTop, barBg);
+        row.append(med, av, info);
+        listEl.appendChild(row);
+      });
+    }
+
     function renderUserBar() {
       getAllWhos();
       if (!curUser && collabs.length) {
@@ -1843,11 +2229,16 @@
       fillAvatarEl($("me-av-btn"), curUser, "📷");
       const n = cur();
       if (n && $("who-av-btn")) fillAvatarEl($("who-av-btn"), n.who, "📷");
+      renderTimerUI();
       updateOnlinePeersUI();
     }
 
     function setActiveUser(name) {
-      curUser = (name || "").trim();
+      const nextName = (name || "").trim();
+      if (timerRunning && curUser && curUser !== nextName) {
+        stopWorkTimer(true);
+      }
+      curUser = nextName;
       if (curUser) ensureCollab(curUser);
       try { localStorage.setItem(USER_KEY, curUser) } catch (e) { }
       renderUserBar();
@@ -1937,6 +2328,10 @@
         if (avatars[editingUserOrigName]) {
           avatars[newName] = avatars[editingUserOrigName];
           delete avatars[editingUserOrigName];
+        }
+        if (workSecs[editingUserOrigName]) {
+          workSecs[newName] = (workSecs[newName] || 0) + workSecs[editingUserOrigName];
+          delete workSecs[editingUserOrigName];
         }
         if (curUser === editingUserOrigName) setActiveUser(newName);
         S.notes.forEach(n => {
@@ -2044,6 +2439,26 @@
       playSfx("pickup");
       openUserPop(null);
     };
+    $("timer-btn").onclick = e => {
+      e.stopPropagation();
+      toggleWorkTimer();
+    };
+    $("trophy-btn").onclick = e => {
+      e.stopPropagation();
+      const pop = $("rank-pop");
+      const opening = !pop.classList.contains("open");
+      if (opening) {
+        playSfx("pickup");
+        renderRankingPop();
+        pop.classList.add("open");
+        pop.classList.remove("pop-anim");
+        void pop.offsetWidth;
+        pop.classList.add("pop-anim");
+      } else {
+        pop.classList.remove("open", "pop-anim");
+      }
+    };
+    $("rank-close").onclick = () => $("rank-pop").classList.remove("open", "pop-anim");
 
     function initUser() {
       try { const u = localStorage.getItem(USER_KEY); if (u) curUser = u.trim() } catch (e) { }
@@ -2351,16 +2766,21 @@
           if (p.subCols && typeof p.subCols === "object") subCols = { ...subCols, ...p.subCols };
           if (Array.isArray(p.collabs)) collabs = [...new Set([...p.collabs, ...collabs])];
           if (p.avatars && typeof p.avatars === "object") avatars = { ...avatars, ...p.avatars };
+          if (p.workSecs && typeof p.workSecs === "object") {
+            Object.keys(p.workSecs).forEach(k => {
+              workSecs[k] = Math.max(workSecs[k] || 0, Number(p.workSecs[k]) || 0);
+            });
+          }
         }
         subgroups.forEach((sg, i) => { sg.color = normalizeColor(sg.color || COLORS[i % COLORS.length]) });
         Object.keys(catColors).forEach(k => { catColors[k] = normalizeColor(catColors[k]) });
         if (persistLocal) {
-          try { localStorage.setItem(KEY + "-subs", JSON.stringify({ subs: subgroups, catColors, subCols, collabs, avatars })) } catch (e) { }
+          try { localStorage.setItem(KEY + "-subs", JSON.stringify({ subs: subgroups, catColors, subCols, collabs, avatars, workSecs })) } catch (e) { }
         }
       } catch (e) { }
     }
     async function saveSubgroupsRemote() {
-      const payload = { subs: subgroups, catColors, subCols, collabs, avatars };
+      const payload = { subs: subgroups, catColors, subCols, collabs, avatars, workSecs };
       try { localStorage.setItem(KEY + "-subs", JSON.stringify(payload)) } catch (e) { }
       if (!sb) return;
       await sb.from("notes").upsert({
@@ -2394,11 +2814,16 @@
           name: curUser || "Invitado/a",
           sub: curSub,
           color: myColor,
+          working: timerRunning,
+          secs: curUser ? (workSecs[curUser] || 0) : 0,
           leave: isLeave
         }
       });
     }
-    window.addEventListener("beforeunload", () => sendPresencePing(true));
+    window.addEventListener("beforeunload", () => {
+      if (timerRunning) saveSubgroupsRemote();
+      sendPresencePing(true);
+    });
 
     function updateOnlinePeersUI() {
       const topBox = $("online-peers");
@@ -2456,13 +2881,19 @@
       const name = (p.name || "").trim() || "Invitado/a";
       const sub = p.sub || "principal";
       const color = p.color || "#098967";
-      const changed = !prev || prev.name !== name || prev.sub !== sub;
+      const working = !!p.working;
+      if (name && name !== "Invitado/a" && typeof p.secs === "number") {
+        workSecs[name] = Math.max(workSecs[name] || 0, p.secs);
+      }
+      const changed = !prev || prev.name !== name || prev.sub !== sub || prev.working !== working;
       const timer = setTimeout(() => {
         delete activePeers[key];
         updateOnlinePeersUI();
+        if ($("rank-pop").classList.contains("open")) renderRankingPop();
       }, 9500);
-      activePeers[key] = { name, sub, color, timer };
+      activePeers[key] = { name, sub, color, working, timer };
       if (changed) updateOnlinePeersUI();
+      if ($("rank-pop").classList.contains("open")) renderRankingPop();
     }
 
     function switchSubgroup(id) {
@@ -2613,6 +3044,7 @@
               unpackMeta(payload.new.body, true);
               S.notes.forEach(n => { if (n.cat && catColors[n.cat]) n.color = catColors[n.cat] });
               renderSubgroups(); renderUserBar(); render(); if (sel) syncPanelFromNote(cur());
+              if ($("rank-pop").classList.contains("open")) renderRankingPop();
               return;
             }
             if (payload.eventType === "DELETE") {
@@ -3439,6 +3871,7 @@
       if (!e.target.closest("#who-dd") && e.target !== $("f-who")) $("who-dd").classList.remove("open");
       if (!e.target.closest("#me-dd") && !e.target.closest("#me-sel-btn")) $("me-dd").classList.remove("open");
       if ($("user-pop").classList.contains("open") && !e.target.closest("#user-pop") && !e.target.closest("#add-user-btn") && !e.target.closest("#me-dd")) closeUserPop();
+      if ($("rank-pop").classList.contains("open") && !e.target.closest("#rank-pop") && !e.target.closest("#trophy-btn")) $("rank-pop").classList.remove("open", "pop-anim");
     });
     function paintSw() {
       const n = cur();
