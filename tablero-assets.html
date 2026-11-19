@@ -589,6 +589,40 @@
       font-weight: 800
     }
 
+    .sub-filter-btn {
+      margin-left: auto;
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      border: 2px solid var(--line);
+      background: #fffdf9;
+      color: var(--ink);
+      cursor: pointer;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 2px 3px 0 var(--shd);
+      transition: transform .12s, box-shadow .12s, background .14s, color .14s
+    }
+
+    .sub-filter-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 4px 0 var(--shd)
+    }
+
+    .sub-filter-btn.on {
+      background: #098967;
+      color: #fffdf9;
+      box-shadow: 2px 3px 0 #063b2c
+    }
+
+    .sub-filter-btn svg {
+      width: 15px;
+      height: 15px;
+      display: block
+    }
+
     .sub-list {
       display: flex;
       flex-direction: column;
@@ -1707,6 +1741,9 @@
       <div class="sub-hdr">
         <span>Subgrupos</span>
         <span class="nb-count" id="sub-count">4</span>
+        <button type="button" class="sub-filter-btn" id="sub-filter-btn" title="Filtrar solo subgrupos con tareas asignadas a ti">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        </button>
       </div>
       <div class="sub-list" id="sub-list"></div>
       <div class="row" style="gap:6px;margin-top:4px">
@@ -1914,6 +1951,8 @@
     };
     let subCols = {}; // Número de columnas por subgrupo (por defecto 5)
     let allNotesWho = {}; // Mapa global idNota -> nombre de responsable (de todos los subgrupos)
+    let allNotesMeta = {}; // Mapa global idNota -> { board, who, st } para filtrar subgrupos por tareas asignadas
+    let subFilterMine = false; // Filtro del panel de subgrupos: solo subgrupos con tareas asignadas al usuario activo
     let collabs = []; // Lista global de nombres de colaboradores
     let avatars = {}; // Mapa nombreColaborador -> dataURL de su imagen de avatar
     let workSecs = {}; // Mapa nombreColaborador -> segundos totales trabajados
@@ -2242,6 +2281,7 @@
       if (curUser) ensureCollab(curUser);
       try { localStorage.setItem(USER_KEY, curUser) } catch (e) { }
       renderUserBar();
+      if (subFilterMine) renderSubgroups();
       sendPresencePing();
     }
 
@@ -2634,12 +2674,66 @@
       }
     });
 
+    function subgroupHasUserTasks(subId, userName) {
+      const target = (userName || "").trim();
+      if (!target) return false;
+      if (subId === curSub) {
+        return S.notes.some(n => n.st !== "titulo" && (n.who || "").trim() === target);
+      }
+      const metaEntries = Object.values(allNotesMeta).filter(m => m && m.board === subId);
+      if (metaEntries.length) {
+        return metaEntries.some(m => m.st !== "titulo" && m.who === target);
+      }
+      try {
+        const raw = localStorage.getItem(KEY + "-" + subId);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.notes)) {
+            return parsed.notes.some(n => n.st !== "titulo" && (n.who || "").trim() === target);
+          }
+        }
+      } catch (e) { }
+      return false;
+    }
+
+    $("sub-filter-btn").onclick = e => {
+      e.stopPropagation();
+      if (!subFilterMine && !curUser) {
+        openUserPop(null);
+        return;
+      }
+      subFilterMine = !subFilterMine;
+      playSfx(subFilterMine ? "pickup" : "drop");
+      renderSubgroups();
+    };
+
     function renderSubgroups(landedId = null) {
       const w = $("sub-list"); w.textContent = "";
-      const cnt = $("sub-count");
-      if (cnt) cnt.textContent = subgroups.length;
+      const fBtn = $("sub-filter-btn");
+      if (fBtn) {
+        fBtn.classList.toggle("on", subFilterMine);
+        fBtn.title = subFilterMine
+          ? `Mostrando solo subgrupos con tareas de ${curUser || "ti"} (Clic para ver todos)`
+          : `Filtrar solo subgrupos con tareas asignadas a ${curUser || "ti"}`;
+      }
 
-      subgroups.forEach((sg, idx) => {
+      const listToShow = (subFilterMine && curUser)
+        ? subgroups.filter(sg => subgroupHasUserTasks(sg.id, curUser))
+        : subgroups;
+
+      const cnt = $("sub-count");
+      if (cnt) cnt.textContent = listToShow.length;
+
+      if (!listToShow.length) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "font-size:12.5px;font-weight:700;color:var(--mute);text-align:center;padding:18px 8px;border:2px dashed rgba(24,23,21,.22);border-radius:12px";
+        empty.textContent = `No tienes tareas asignadas como "${curUser}".`;
+        w.appendChild(empty);
+        return;
+      }
+
+      listToShow.forEach((sg) => {
+        const idx = subgroups.indexOf(sg);
         if (!sg.color) sg.color = COLORS[idx % COLORS.length];
         else sg.color = normalizeColor(sg.color);
 
@@ -2958,10 +3052,13 @@
     async function pushNote(n, delay = 0, boardOverride) {
       const targetBoard = boardOverride || curSub;
       if (targetBoard === curSub) save(targetBoard, S);
-      if (!sb) return;
       const wName = (n.who || "").trim();
+      const stVal = n.st === "titulo" ? "titulo" : "";
       if (wName) allNotesWho[n.id] = wName; else delete allNotesWho[n.id];
-      const row = { id: n.id, board: targetBoard, t: n.t || "", cat: n.cat || "", who: n.who || "", st: n.st === "titulo" ? "titulo" : "", link: n.link || "", body: n.body || "", color: n.color || COLORS[0], x: Math.round(n.x || 0), y: Math.round(n.y || 0), updated_at: new Date().toISOString() };
+      allNotesMeta[n.id] = { board: targetBoard, who: wName, st: stVal };
+      if (subFilterMine) renderSubgroups();
+      if (!sb) return;
+      const row = { id: n.id, board: targetBoard, t: n.t || "", cat: n.cat || "", who: n.who || "", st: stVal, link: n.link || "", body: n.body || "", color: n.color || COLORS[0], x: Math.round(n.x || 0), y: Math.round(n.y || 0), updated_at: new Date().toISOString() };
       pendingRows[n.id] = row;
       clearTimeout(saveTimers[n.id]);
       saveTimers[n.id] = setTimeout(async () => {
@@ -2974,7 +3071,8 @@
     }
     async function deleteNotesRemote(ids) {
       save(curSub, S);
-      ids.forEach(id => { clearTimeout(saveTimers[id]); delete saveTimers[id]; delete pendingRows[id]; delete allNotesWho[id] });
+      ids.forEach(id => { clearTimeout(saveTimers[id]); delete saveTimers[id]; delete pendingRows[id]; delete allNotesWho[id]; delete allNotesMeta[id] });
+      if (subFilterMine) renderSubgroups();
       if (!sb || !ids.length) return;
       const { error } = await sb.from("notes").delete().in("id", ids);
       if (error) setStatus("err", "Error al borrar en nube");
@@ -2987,14 +3085,17 @@
         const { data, error } = await sb.from("notes").select("*").eq("board", targetSub).order("id", { ascending: true });
         if (error) throw error;
         if (reqId !== cloudReqId || curSub !== targetSub) return;
+        Object.keys(allNotesMeta).forEach(k => { if (allNotesMeta[k]?.board === targetSub) delete allNotesMeta[k] });
         S.notes = (data || []).map(r => {
-          const nid = Number(r.id), w = (r.who || "").trim();
+          const nid = Number(r.id), w = (r.who || "").trim(), stVal = r.st === "titulo" ? "titulo" : "";
           if (w) allNotesWho[nid] = w; else delete allNotesWho[nid];
-          return { id: nid, t: r.t, cat: r.cat, who: r.who, st: r.st === "titulo" ? "titulo" : "", link: r.link, body: r.body, color: r.cat ? getCatColor(r.cat, r.color) : r.color, x: r.x, y: r.y };
+          allNotesMeta[nid] = { board: targetSub, who: w, st: stVal };
+          return { id: nid, t: r.t, cat: r.cat, who: r.who, st: stVal, link: r.link, body: r.body, color: r.cat ? getCatColor(r.cat, r.color) : r.color, x: r.x, y: r.y };
         });
         ensureColumnTitles(true);
         save(targetSub, S);
         render();
+        if (subFilterMine) renderSubgroups();
         if (sel && S.notes.some(n => n.id === sel)) select(sel, false);
       } catch (err) {
         console.error(err);
@@ -3024,16 +3125,19 @@
           await saveSubgroupsRemote();
         }
 
-        // Cargar todos los responsables de todos los subgrupos
-        const { data: allWhoRows } = await sb.from("notes").select("id,who").neq("id", META_ID);
+        // Cargar todos los responsables y subgrupos de todas las notas
+        const { data: allWhoRows } = await sb.from("notes").select("id,board,who,st").neq("id", META_ID);
         if (Array.isArray(allWhoRows)) {
           allNotesWho = {};
+          allNotesMeta = {};
           allWhoRows.forEach(r => {
-            const w = (r.who || "").trim();
-            if (w) { allNotesWho[Number(r.id)] = w; ensureCollab(w) }
+            const nid = Number(r.id), w = (r.who || "").trim(), stVal = r.st === "titulo" ? "titulo" : "";
+            if (w) { allNotesWho[nid] = w; ensureCollab(w) }
+            allNotesMeta[nid] = { board: r.board, who: w, st: stVal };
           });
         }
         renderUserBar();
+        if (subFilterMine) renderSubgroups();
 
         await fetchSubgroupNotes(curSub);
 
@@ -3050,24 +3154,28 @@
             if (payload.eventType === "DELETE") {
               const delId = Number(payload.old.id);
               delete allNotesWho[delId];
+              delete allNotesMeta[delId];
               if (S.notes.some(n => n.id === delId)) {
                 S.notes = S.notes.filter(n => n.id !== delId);
                 selSet.delete(delId);
                 if (sel === delId) { sel = null; $("panel").classList.remove("open") }
                 save(curSub, S); render();
               }
+              if (subFilterMine) renderSubgroups();
             } else if (payload.new) {
               const nr = payload.new;
-              const nid = Number(nr.id), w = (nr.who || "").trim();
+              const nid = Number(nr.id), w = (nr.who || "").trim(), stVal = nr.st === "titulo" ? "titulo" : "";
               if (w) { allNotesWho[nid] = w; ensureCollab(w) } else delete allNotesWho[nid];
+              allNotesMeta[nid] = { board: nr.board, who: w, st: stVal };
               if (nr.board === curSub) {
-                const incoming = { id: nid, t: nr.t, cat: nr.cat, who: nr.who, st: nr.st === "titulo" ? "titulo" : "", link: nr.link, body: nr.body, color: nr.cat ? getCatColor(nr.cat, nr.color) : nr.color, x: nr.x, y: nr.y };
+                const incoming = { id: nid, t: nr.t, cat: nr.cat, who: nr.who, st: stVal, link: nr.link, body: nr.body, color: nr.cat ? getCatColor(nr.cat, nr.color) : nr.color, x: nr.x, y: nr.y };
                 const idx = S.notes.findIndex(n => n.id === incoming.id);
                 if (idx >= 0) S.notes[idx] = incoming; else S.notes.push(incoming);
                 save(curSub, S); render();
                 if (sel === incoming.id) syncPanelFromNote(incoming);
               }
               renderUserBar();
+              if (subFilterMine) renderSubgroups();
             }
           })
           .on("broadcast", { event: "presence_ping" }, ({ payload }) => {
