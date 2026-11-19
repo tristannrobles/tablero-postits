@@ -1981,14 +1981,8 @@
       return (Math.abs(h) % 80000000) * 100 + c + 1;
     }
     function getNumCols() {
-      let base = subCols[curSub] || DEFAULT_COLS;
-      S.notes.forEach(n => {
-        if (n.st === "titulo") {
-          const c = Math.round(((n.x || 0) - COL_X0) / COL_STEP);
-          if (c >= base && c < 25) base = c + 1;
-        }
-      });
-      subCols[curSub] = Math.max(1, base);
+      const base = Number(subCols[curSub]) || DEFAULT_COLS;
+      subCols[curSub] = Math.max(1, Math.min(25, base));
       return subCols[curSub];
     }
     function ensureColumnTitles(pushNew = false) {
@@ -2099,24 +2093,15 @@
     }
 
     function getAllWhos() {
-      const set = new Set(collabs.filter(Boolean));
-      Object.keys(avatars).forEach(w => { if (w) set.add(w) });
-      Object.keys(workSecs).forEach(w => { if (w) set.add(w) });
-      Object.values(allNotesWho).forEach(w => { if (w) set.add(w) });
-      S.notes.forEach(n => { const w = (n.who || "").trim(); if (w) set.add(w) });
-      subgroups.forEach(sg => {
-        try {
-          const raw = localStorage.getItem(KEY + "-" + sg.id);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (parsed && Array.isArray(parsed.notes)) {
-              parsed.notes.forEach(n => { const w = (n.who || "").trim(); if (w) set.add(w) });
-            }
-          }
-        } catch (e) { }
-      });
-      if (curUser) set.add(curUser);
-      collabs = [...set];
+      // La lista oficial de colaboradores es `collabs` (gestionada con + y 🗑).
+      // Solo si está completamente vacía, se inicializa con los responsables encontrados en notas.
+      if (!collabs.length) {
+        const set = new Set();
+        Object.values(allNotesWho).forEach(w => { if (w) set.add(w) });
+        S.notes.forEach(n => { const w = (n.who || "").trim(); if (w) set.add(w) });
+        if (curUser) set.add(curUser);
+        collabs = [...set];
+      }
       return collabs;
     }
 
@@ -2395,20 +2380,43 @@
       else if (e.key === "Escape") { e.preventDefault(); closeUserPop() }
     });
 
-    $("upop-del").onclick = () => {
+    $("upop-del").onclick = async () => {
       if (!editingUserOrigName) return;
-      if (!confirm(`¿Quitar a "${editingUserOrigName}" de la lista de colaboradores?`)) return;
-      collabs = collabs.filter(c => c !== editingUserOrigName);
-      delete avatars[editingUserOrigName];
-      Object.keys(allNotesWho).forEach(k => { if (allNotesWho[k] === editingUserOrigName) delete allNotesWho[k] });
+      const targetDel = editingUserOrigName;
+      if (!confirm(`¿Quitar definitivamente a "${targetDel}" de la lista de colaboradores y de todas las notas?`)) return;
+      if (timerRunning && curUser === targetDel) stopWorkTimer(false);
+      collabs = collabs.filter(c => c !== targetDel);
+      delete avatars[targetDel];
+      delete workSecs[targetDel];
+      Object.keys(allNotesWho).forEach(k => { if (allNotesWho[k] === targetDel) delete allNotesWho[k] });
+      Object.keys(allNotesMeta).forEach(k => { if (allNotesMeta[k]?.who === targetDel) allNotesMeta[k].who = "" });
       S.notes.forEach(n => {
-        if ((n.who || "").trim() === editingUserOrigName) { n.who = ""; pushNote(n, 30) }
+        if ((n.who || "").trim() === targetDel) { n.who = ""; pushNote(n, 20) }
       });
-      if (curUser === editingUserOrigName) setActiveUser(collabs[0] || "");
-      saveSubgroupsRemote();
+      // Limpiar también de todos los subgrupos guardados en localStorage
+      subgroups.forEach(sg => {
+        try {
+          const raw = localStorage.getItem(KEY + "-" + sg.id);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.notes)) {
+              let dirty = false;
+              parsed.notes.forEach(n => { if ((n.who || "").trim() === targetDel) { n.who = ""; dirty = true } });
+              if (dirty) localStorage.setItem(KEY + "-" + sg.id, JSON.stringify(parsed));
+            }
+          }
+        } catch (e) { }
+      });
+      // Limpiar en Supabase TODAS las notas (de cualquier subgrupo) que tuvieran asignado ese nombre
+      if (sb) {
+        try { await sb.from("notes").update({ who: "" }).eq("who", targetDel) } catch (e) { }
+      }
+      if (curUser === targetDel) setActiveUser(collabs[0] || "");
+      await saveSubgroupsRemote();
       closeUserPop();
       renderUserBar();
       render();
+      if ($("rank-pop").classList.contains("open")) renderRankingPop();
       if (sel) syncPanelFromNote(cur());
     };
 
@@ -2857,13 +2865,22 @@
         else if (p && typeof p === "object") {
           if (Array.isArray(p.subs) && p.subs.length) subgroups = p.subs;
           if (p.catColors && typeof p.catColors === "object") catColors = { ...catColors, ...p.catColors };
-          if (p.subCols && typeof p.subCols === "object") subCols = { ...subCols, ...p.subCols };
-          if (Array.isArray(p.collabs)) collabs = [...new Set([...p.collabs, ...collabs])];
-          if (p.avatars && typeof p.avatars === "object") avatars = { ...avatars, ...p.avatars };
+          if (p.subCols && typeof p.subCols === "object") subCols = { ...p.subCols };
+          if (Array.isArray(p.collabs)) {
+            collabs = [...new Set(p.collabs.map(c => (c || "").trim()).filter(Boolean))];
+            // Si el usuario activo fue eliminado remotamente, cambiar al primero disponible
+            if (curUser && collabs.length && !collabs.includes(curUser)) {
+              curUser = collabs[0];
+              try { localStorage.setItem(USER_KEY, curUser) } catch (e) { }
+            }
+          }
+          if (p.avatars && typeof p.avatars === "object") avatars = { ...p.avatars };
           if (p.workSecs && typeof p.workSecs === "object") {
+            const nextWork = {};
             Object.keys(p.workSecs).forEach(k => {
-              workSecs[k] = Math.max(workSecs[k] || 0, Number(p.workSecs[k]) || 0);
+              nextWork[k] = Math.max(workSecs[k] || 0, Number(p.workSecs[k]) || 0);
             });
+            workSecs = nextWork;
           }
         }
         subgroups.forEach((sg, i) => { sg.color = normalizeColor(sg.color || COLORS[i % COLORS.length]) });
@@ -3037,12 +3054,7 @@
       let hadLocal = false;
       try { const r = localStorage.getItem(KEY + "-" + curSub); if (r) { S = JSON.parse(r); hadLocal = true; if (S.filter === "Todas") S.filter = "Todos" } } catch (e) { }
       if (!hadLocal && !S.notes.length && curSub === "principal") {
-        S.notes = [
-          { id: 1, t: "Torre de arco nivel 1", cat: "Torres", who: "Ana", st: "", link: "", body: "[x] Boceto base\n[ ] Animación de disparo\nRevisar escala con el mapa.", color: COLORS[0], x: colX(0), y: 140 },
-          { id: 2, t: "Torre de hielo", cat: "Torres", who: "Beto", st: "", link: "", body: "[ ] Definir paleta de azules", color: COLORS[0], x: colX(1), y: 140 },
-          { id: 3, t: "Habilidad: bola de fuego", cat: "Habilidades", who: "Ana", st: "", link: "", body: "[ ] Definir VFX\n[ ] Sonido de impacto", color: COLORS[1], x: colX(0), y: 310 },
-          { id: 4, t: "Iconos de maná", cat: "UI", who: "Beto", st: "", link: "", body: "", color: COLORS[2], x: colX(2), y: 140 }
-        ];
+        S.notes = [];
       }
       ensureColumnTitles(false);
       S.notes.forEach(n => { if (n.cat) n.color = getCatColor(n.cat, n.color) });
@@ -3132,7 +3144,7 @@
           allNotesMeta = {};
           allWhoRows.forEach(r => {
             const nid = Number(r.id), w = (r.who || "").trim(), stVal = r.st === "titulo" ? "titulo" : "";
-            if (w) { allNotesWho[nid] = w; ensureCollab(w) }
+            if (w) allNotesWho[nid] = w;
             allNotesMeta[nid] = { board: r.board, who: w, st: stVal };
           });
         }
@@ -3165,7 +3177,7 @@
             } else if (payload.new) {
               const nr = payload.new;
               const nid = Number(nr.id), w = (nr.who || "").trim(), stVal = nr.st === "titulo" ? "titulo" : "";
-              if (w) { allNotesWho[nid] = w; ensureCollab(w) } else delete allNotesWho[nid];
+              if (w) allNotesWho[nid] = w; else delete allNotesWho[nid];
               allNotesMeta[nid] = { board: nr.board, who: w, st: stVal };
               if (nr.board === curSub) {
                 const incoming = { id: nid, t: nr.t, cat: nr.cat, who: nr.who, st: stVal, link: nr.link, body: nr.body, color: nr.cat ? getCatColor(nr.cat, nr.color) : nr.color, x: nr.x, y: nr.y };
