@@ -655,21 +655,100 @@
       background: rgba(0, 0, 0, .15)
     }
 
-    /* Panel lateral derecho */
+    /* Menú flotante tipo tarjeta (con Pop y arrastrable como un post-it) */
     aside {
-      width: 325px;
+      position: fixed;
+      left: 50%;
+      top: 90px;
+      width: 318px;
+      max-height: calc(100vh - 80px);
       background: var(--panel);
-      border-left: 1px solid var(--line);
-      padding: 14px;
+      border: 2.5px solid #1d2130;
+      border-radius: 14px;
+      box-shadow: 0 8px 0 rgba(29, 33, 48, .24), 0 18px 36px rgba(0, 0, 0, .2);
+      padding: 12px 14px 14px;
       overflow: auto;
       display: none;
       flex-direction: column;
       gap: 10px;
-      z-index: 22
+      z-index: 65;
+      cursor: grab;
+      touch-action: none;
+      transform-origin: center top
     }
 
     aside.open {
       display: flex
+    }
+
+    aside.pop-anim {
+      animation: panelPop .26s cubic-bezier(.2, 1.45, .35, 1)
+    }
+
+    aside.dragging-panel {
+      cursor: grabbing;
+      box-shadow: -5px 16px 0 rgba(23, 27, 39, .3), 0 24px 44px rgba(0, 0, 0, .25);
+      transform: scale(1.03) rotate(var(--ptilt, 0deg))
+    }
+
+    @keyframes panelPop {
+      0% {
+        opacity: 0;
+        transform: scale(.74) translateY(8px)
+      }
+      65% {
+        opacity: 1;
+        transform: scale(1.04) translateY(-2px)
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0)
+      }
+    }
+
+    .panel-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed var(--line);
+      user-select: none
+    }
+
+    .panel-grip {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--mute);
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .panel-x {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1.5px solid var(--line);
+      background: var(--bg);
+      color: var(--ink);
+      font-weight: 800;
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      flex-shrink: 0;
+      transition: transform .12s, background .12s
+    }
+
+    .panel-x:hover {
+      background: #d6336c;
+      color: #fff;
+      border-color: #d6336c;
+      transform: scale(1.1)
     }
 
     label {
@@ -1011,16 +1090,8 @@
 
     @media (max-width:700px) {
       aside {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        width: auto;
-        max-height: 62%;
-        border-left: 0;
-        border-top: 1px solid var(--line);
-        padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-        z-index: 26
+        width: calc(100vw - 24px);
+        max-height: 70vh;
       }
     }
   </style>
@@ -1069,6 +1140,10 @@
     </div>
 
     <aside id="panel" aria-label="Detalle de la nota">
+      <div class="panel-top" id="panel-hdr">
+        <span class="panel-grip">⋮⋮ Propiedades</span>
+        <button type="button" class="panel-x" id="close" title="Cerrar (Esc)">✕</button>
+      </div>
       <div id="multi-badge"
         style="display:none;background:var(--acc);color:var(--accink);padding:5px 9px;border-radius:6px;font-size:12px;font-weight:700">
       </div>
@@ -1109,7 +1184,6 @@
         <button class="ghost" id="dup" title="Duplicar nota (Ctrl+D)">Duplicar</button>
         <button class="ghost danger" id="del" title="Borrar (Supr)">Borrar</button>
       </div>
-      <button class="ghost" id="close">Cerrar panel (Esc)</button>
     </aside>
   </main>
 
@@ -2143,6 +2217,39 @@
         mb.textContent = `${selSet.size} notas seleccionadas`;
       } else mb.style.display = "none";
     }
+    function positionPanelNextToNote(id, triggerPop = true) {
+      const p = $("panel");
+      const el = document.querySelector(`.note[data-id="${id}"]`);
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const pw = p.offsetWidth || 318;
+      const ph = p.offsetHeight || 420;
+      const gap = 14;
+      let left = r.right + gap;
+      // Si no cabe a la derecha del post-it, abrirlo a su izquierda
+      if (left + pw > window.innerWidth - 12) {
+        left = r.left - pw - gap;
+      }
+      // Limitar dentro de la pantalla (respetando la barra lateral de subgrupos si es posible)
+      const minX = 12;
+      const maxX = Math.max(minX, window.innerWidth - pw - 12);
+      left = Math.max(minX, Math.min(maxX, left));
+
+      let top = r.top - 6;
+      const minY = 58;
+      const maxY = Math.max(minY, window.innerHeight - ph - 12);
+      top = Math.max(minY, Math.min(maxY, top));
+
+      p.style.left = Math.round(left) + "px";
+      p.style.top = Math.round(top) + "px";
+
+      if (triggerPop) {
+        p.classList.remove("pop-anim");
+        void p.offsetWidth;
+        p.classList.add("pop-anim");
+      }
+    }
+
     function select(id, smoothZoom = false) {
       sel = id;
       if (!selSet.has(id)) { selSet.clear(); selSet.add(id) }
@@ -2150,6 +2257,7 @@
       const n = cur(); if (!n) return;
       $("panel").classList.add("open");
       syncPanelFromNote(n);
+      positionPanelNextToNote(id, true);
       if (smoothZoom) focusNoteSmooth(n);
     }
 
@@ -2414,8 +2522,50 @@
       sel = null; selSet.clear(); $("panel").classList.remove("open");
       deleteNotesRemote(ids); render(); layoutColumns(true);
     };
-    $("close").onclick = () => { sel = null; selSet.clear(); $("panel").classList.remove("open"); updateSelectionUI() };
+    $("close").onclick = () => { sel = null; selSet.clear(); $("panel").classList.remove("open", "pop-anim"); updateSelectionUI() };
     $("q").addEventListener("input", e => { qStr = e.target.value; render() });
+
+    // --- Arrastrar el panel flotante como si fuera un post-it ---
+    $("panel").addEventListener("pointerdown", e => {
+      if (e.button !== 0) return;
+      if (e.target.closest("input, textarea, select, button, a, .cat-pop, .cat-dd, .panel-checks")) return;
+      const p = $("panel");
+      const r = p.getBoundingClientRect();
+      const sx = e.clientX, sy = e.clientY;
+      const ox = r.left, oy = r.top;
+      let lastX = e.clientX, tilt = 0, moved = false;
+      p.setPointerCapture(e.pointerId);
+      const mv = ev => {
+        const dx = ev.clientX - sx, dy = ev.clientY - sy;
+        if (!moved && Math.abs(dx) + Math.abs(dy) > 3) {
+          moved = true;
+          p.classList.remove("pop-anim");
+          p.classList.add("dragging-panel");
+          playSfx("pickup");
+        }
+        if (!moved) return;
+        const vx = ev.clientX - lastX;
+        lastX = ev.clientX;
+        tilt = tilt * 0.65 + Math.max(-7, Math.min(7, vx * 0.35)) * 0.35;
+        p.style.setProperty("--ptilt", tilt.toFixed(2) + "deg");
+        const pw = p.offsetWidth || 318, ph = p.offsetHeight || 400;
+        const nx = Math.max(8, Math.min(window.innerWidth - pw - 8, ox + dx));
+        const ny = Math.max(52, Math.min(window.innerHeight - 60, oy + dy));
+        p.style.left = Math.round(nx) + "px";
+        p.style.top = Math.round(ny) + "px";
+      };
+      const up = () => {
+        p.removeEventListener("pointermove", mv);
+        p.removeEventListener("pointerup", up);
+        if (moved) {
+          p.classList.remove("dragging-panel");
+          p.style.setProperty("--ptilt", "0deg");
+          playSfx("drop");
+        }
+      };
+      p.addEventListener("pointermove", mv);
+      p.addEventListener("pointerup", up);
+    });
 
     // --- Modo Selección por defecto al arrastrar en la pizarra; Pan con Espacio+Clic o Botón central ---
     $("scroll").addEventListener("pointerdown", e => {
@@ -2467,7 +2617,7 @@
           if (!moved) {
             $("close").click();
           } else if (sel) {
-            $("panel").classList.add("open"); syncPanelFromNote(cur());
+            $("panel").classList.add("open"); syncPanelFromNote(cur()); positionPanelNextToNote(sel, true);
           }
         };
         sc.addEventListener("pointermove", mv); sc.addEventListener("pointerup", up);
@@ -2528,7 +2678,7 @@
       render();
       layoutColumns(true);
       S.notes.filter(x => selSet.has(x.id)).forEach(x => pushNote(x, 0));
-      if (sel) { $("panel").classList.add("open"); syncPanelFromNote(cur()) }
+      if (sel) { $("panel").classList.add("open"); syncPanelFromNote(cur()); positionPanelNextToNote(sel, true) }
     }
 
     window.addEventListener("keydown", e => {
@@ -2559,7 +2709,7 @@
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a" && !typing) {
         e.preventDefault();
         selSet.clear(); visibleNotes().filter(n => n.st !== "titulo").forEach(n => { selSet.add(n.id); sel = n.id });
-        updateSelectionUI(); if (sel) { $("panel").classList.add("open"); syncPanelFromNote(cur()) }
+        updateSelectionUI(); if (sel) { $("panel").classList.add("open"); syncPanelFromNote(cur()); positionPanelNextToNote(sel, true) }
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d" && (sel || selSet.size)) {
