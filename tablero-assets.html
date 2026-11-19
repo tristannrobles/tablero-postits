@@ -1506,7 +1506,7 @@
         w.appendChild(d);
       });
     }
-    function unpackMeta(raw) {
+    function unpackMeta(raw, persistLocal = false) {
       try {
         const p = JSON.parse(raw);
         if (Array.isArray(p)) { subgroups = p }
@@ -1514,6 +1514,9 @@
           if (Array.isArray(p.subs) && p.subs.length) subgroups = p.subs;
           if (p.catColors && typeof p.catColors === "object") catColors = { ...catColors, ...p.catColors };
           if (p.subCols && typeof p.subCols === "object") subCols = { ...subCols, ...p.subCols };
+        }
+        if (persistLocal) {
+          try { localStorage.setItem(KEY + "-subs", JSON.stringify({ subs: subgroups, catColors, subCols })) } catch (e) { }
         }
       } catch (e) { }
     }
@@ -1574,8 +1577,10 @@
     $("new-sub-in").addEventListener("keydown", e => { if (e.key === "Enter") createSubFromInput() });
 
     // --- Almacenamiento local y Supabase ---
-    function loadLocalBoard() {
-      try { const subs = localStorage.getItem(KEY + "-subs"); if (subs) unpackMeta(subs) } catch (e) { }
+    function loadLocalBoard(readMeta = false) {
+      if (readMeta) {
+        try { const subs = localStorage.getItem(KEY + "-subs"); if (subs) unpackMeta(subs, false) } catch (e) { }
+      }
       S = { notes: [], filter: "Todos" };
       let hadLocal = false;
       try { const r = localStorage.getItem(KEY + "-" + curSub); if (r) { S = JSON.parse(r); hadLocal = true; if (S.filter === "Todas") S.filter = "Todos" } } catch (e) { }
@@ -1645,7 +1650,7 @@
 
         const { data: metaData } = await sb.from("notes").select("body").eq("id", META_ID).maybeSingle();
         if (metaData && metaData.body) {
-          unpackMeta(metaData.body);
+          unpackMeta(metaData.body, true);
           renderSubgroups();
         } else {
           await saveSubgroupsRemote();
@@ -1657,7 +1662,7 @@
           .on("postgres_changes", { event: "*", schema: "public", table: "notes" }, payload => {
             const r = payload.new || payload.old;
             if (r && Number(r.id) === META_ID && payload.new?.body) {
-              unpackMeta(payload.new.body);
+              unpackMeta(payload.new.body, true);
               S.notes.forEach(n => { if (n.cat && catColors[n.cat]) n.color = catColors[n.cat] });
               renderSubgroups(); render(); if (sel) syncPanelFromNote(cur());
               return;
@@ -2743,7 +2748,7 @@
       sb = null; initCloud();
     };
 
-    initUser(); loadLocalBoard(); renderSubgroups(); render(); applyCam(); initCloud();
+    initUser(); loadLocalBoard(true); renderSubgroups(); render(); applyCam(); initCloud();
   </script>
 </body>
 
