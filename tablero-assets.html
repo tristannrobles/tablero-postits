@@ -11,44 +11,19 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg: #e6e9f0;
-      --dot: #c3c8d6;
-      --bar: #f7f8fb;
-      --ink: #1d2130;
-      --mute: #667;
-      --line: #cfd4e0;
-      --panel: #fbfbfd;
-      --acc: #3b5bdb;
-      --accink: #fff;
+      --bg: #f3efe6;
+      --dot: #d6cebe;
+      --bar: #f7f4ec;
+      --ink: #181715;
+      --mute: #655f53;
+      --line: #181715;
+      --panel: #fbf9f3;
+      --acc: #0b8766;
+      --accink: #fffdf9;
+      --shd: #25221b;
       box-sizing: border-box;
       padding-top: env(safe-area-inset-top, 0px);
       padding-bottom: env(safe-area-inset-bottom, 0px)
-    }
-
-    @media (prefers-color-scheme:dark) {
-      :root:not([data-theme="light"]) {
-        --bg: #171b27;
-        --dot: #2a3042;
-        --bar: #1f2433;
-        --ink: #e8eaf2;
-        --mute: #99a0b5;
-        --line: #33394d;
-        --panel: #1f2433;
-        --acc: #8fa6ff;
-        --accink: #10142a
-      }
-    }
-
-    :root[data-theme="dark"] {
-      --bg: #171b27;
-      --dot: #2a3042;
-      --bar: #1f2433;
-      --ink: #e8eaf2;
-      --mute: #99a0b5;
-      --line: #33394d;
-      --panel: #1f2433;
-      --acc: #8fa6ff;
-      --accink: #10142a
     }
 
     * {
@@ -64,7 +39,7 @@
     body {
       background: var(--bg);
       color: var(--ink);
-      font: 400 14px/1.4 "Bricolage Grotesque", system-ui, sans-serif;
+      font: 600 14px/1.4 "Bricolage Grotesque", system-ui, sans-serif;
       display: flex;
       flex-direction: column;
       overflow: hidden
@@ -75,19 +50,20 @@
       gap: 10px;
       align-items: center;
       flex-wrap: wrap;
-      padding: 9px 14px;
+      padding: 10px 16px;
       background: var(--bar);
-      border-bottom: 1px solid var(--line);
+      border-bottom: 2px solid var(--line);
       z-index: 25
     }
 
     h1 {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 800;
-      margin: 0 4px 0 0;
+      letter-spacing: -0.3px;
+      margin: 0 6px 0 0;
       display: flex;
       align-items: center;
-      gap: 6px
+      gap: 7px
     }
 
     button,
@@ -101,39 +77,57 @@
     .btn {
       background: var(--acc);
       color: var(--accink);
-      border: 0;
-      border-radius: 8px;
-      padding: 7px 12px;
-      font-weight: 600;
+      border: 2px solid var(--line);
+      border-radius: 11px;
+      padding: 7px 13px;
+      font-weight: 800;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 5px
+      gap: 5px;
+      box-shadow: 3px 3px 0 var(--shd);
+      transition: transform .12s, box-shadow .12s, filter .12s
     }
 
     .btn:hover {
-      filter: brightness(1.07)
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0 var(--shd);
+      filter: brightness(1.05)
+    }
+
+    .btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--shd)
     }
 
     .chips {
       display: flex;
-      gap: 6px;
+      gap: 7px;
       flex-wrap: wrap
     }
 
     .chip {
-      border: 1px solid var(--line);
-      background: transparent;
+      border: 2px solid var(--line);
+      background: var(--panel);
       border-radius: 99px;
-      padding: 4px 11px;
+      padding: 4px 12px;
       cursor: pointer;
-      font-size: 13px
+      font-size: 12.5px;
+      font-weight: 700;
+      box-shadow: 2px 3px 0 var(--shd);
+      transition: transform .1s, box-shadow .1s, background .12s
+    }
+
+    .chip:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 4px 0 var(--shd)
     }
 
     .chip.on {
       background: var(--ink);
-      color: var(--bg);
-      border-color: var(--ink)
+      color: #fffdf9;
+      border-color: var(--ink);
+      box-shadow: 2px 3px 0 #0b8766
     }
 
     main {
@@ -150,7 +144,7 @@
       touch-action: none;
       cursor: default;
       user-select: none;
-      background-image: radial-gradient(var(--dot) 1.5px, transparent 1.5px);
+      background-image: radial-gradient(var(--dot) 1.7px, transparent 1.7px);
       background-size: 26px 26px
     }
 
@@ -176,28 +170,29 @@
     .col-lane {
       position: absolute;
       width: 236px;
-      border-radius: 14px;
-      background: rgba(120, 130, 160, .08);
-      border: 2px dashed rgba(120, 130, 160, .24);
+      border-radius: 18px;
+      background: rgba(24, 23, 21, .035);
+      border: 2px dashed rgba(24, 23, 21, .22);
       pointer-events: none;
       transition: background .15s, border-color .15s;
       z-index: 1
     }
 
     .col-lane.active-col {
-      background: rgba(59, 91, 219, .1);
-      border-color: var(--acc)
+      background: rgba(11, 135, 102, .11);
+      border-color: var(--acc);
+      border-style: solid
     }
 
     .col-add-note {
       position: absolute;
       width: 220px;
-      height: 38px;
-      border-radius: 9px;
-      border: 2px dashed var(--line);
-      background: rgba(255, 255, 255, .25);
-      color: var(--mute);
-      font-weight: 700;
+      height: 40px;
+      border-radius: 12px;
+      border: 2px dashed rgba(24, 23, 21, .4);
+      background: rgba(251, 249, 243, .65);
+      color: var(--ink);
+      font-weight: 800;
       font-size: 13px;
       cursor: pointer;
       display: flex;
@@ -205,23 +200,23 @@
       justify-content: center;
       gap: 5px;
       z-index: 4;
-      transition: background .15s, color .15s, transform .1s, border-color .15s
+      transition: background .14s, transform .12s, box-shadow .14s, border-style .14s
     }
 
     .col-add-note:hover {
       background: var(--panel);
-      color: var(--ink);
-      border-color: var(--ink);
-      transform: translateY(-1px)
+      border: 2px solid var(--line);
+      box-shadow: 3px 4px 0 var(--shd);
+      transform: translate(-1px, -2px)
     }
 
     .add-col-btn {
       position: absolute;
       width: 58px;
       height: 78px;
-      border-radius: 12px;
-      border: 2.5px dashed var(--line);
-      background: var(--bar);
+      border-radius: 15px;
+      border: 2px solid var(--line);
+      background: var(--panel);
       color: var(--ink);
       font-size: 26px;
       font-weight: 800;
@@ -230,25 +225,24 @@
       align-items: center;
       justify-content: center;
       z-index: 5;
-      box-shadow: 0 4px 0 rgba(29, 33, 48, .12);
-      transition: transform .14s cubic-bezier(.2, 1.4, .3, 1), background .15s, border-color .15s
+      box-shadow: 4px 5px 0 var(--shd);
+      transition: transform .14s cubic-bezier(.2, 1.4, .3, 1), background .15s, box-shadow .14s
     }
 
     .add-col-btn:hover {
-      background: var(--acc);
-      color: var(--accink);
-      border-color: #1d2130;
-      border-style: solid;
-      transform: translateY(-2px) scale(1.05)
+      background: #e3b744;
+      color: #fffdf9;
+      box-shadow: 5px 7px 0 #4a3c16;
+      transform: translate(-1px, -2px) scale(1.04)
     }
 
     .drop-slot {
       position: absolute;
       width: 220px;
-      height: 6px;
+      height: 7px;
       border-radius: 99px;
-      background: var(--acc);
-      box-shadow: 0 0 0 3px rgba(59, 91, 219, .22);
+      background: var(--ink);
+      box-shadow: 0 0 0 3px #e3b744;
       pointer-events: none;
       display: none;
       z-index: 40
@@ -257,9 +251,9 @@
     /* Caja de selección múltiple */
     #marquee {
       position: absolute;
-      border: 1.5px solid var(--acc);
-      background: rgba(59, 91, 219, .14);
-      border-radius: 4px;
+      border: 2px solid var(--ink);
+      background: rgba(227, 183, 68, .22);
+      border-radius: 8px;
       pointer-events: none;
       display: none;
       z-index: 30
@@ -278,56 +272,61 @@
     .peer-cursor svg {
       width: 18px;
       height: 18px;
-      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .35))
+      filter: drop-shadow(2px 2px 0 #181715)
     }
 
     .peer-tag {
       display: inline-block;
-      padding: 2px 7px;
+      padding: 2px 8px;
       border-radius: 99px;
+      border: 1.5px solid #181715;
       font-size: 11px;
       font-weight: 800;
       color: #fff;
       margin-left: 10px;
       margin-top: -4px;
       white-space: nowrap;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, .25)
+      box-shadow: 2px 3px 0 #181715
     }
 
-    /* Notas (Post-its) con estética vectorial / Nintendo */
+    /* Notas (Post-its) con estética Neobrutalista (bordes definidos + sombra sólida desplazada) */
     .note {
+      --card-shd: #2b261d;
+      --card-ink: #fffdf9;
+      --card-sub: rgba(255, 253, 249, .86);
+      --card-pill: rgba(0, 0, 0, .18);
       position: absolute;
       width: 220px;
       min-height: 132px;
-      padding: 11px 12px;
-      border-radius: 10px;
-      border: 2.5px solid #1d2130;
-      color: #1b1b22;
-      box-shadow: 0 5px 0 rgba(29, 33, 48, .22);
+      padding: 13px 14px;
+      border-radius: 15px;
+      border: 2px solid #181715;
+      color: var(--card-ink);
+      box-shadow: 4px 6px 0 var(--card-shd);
       cursor: grab;
       touch-action: none;
       user-select: none;
       transition: box-shadow .16s cubic-bezier(.2, 1.3, .3, 1), transform .16s cubic-bezier(.2, 1.3, .3, 1);
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 6px;
       transform-origin: 50% 35%
     }
 
     .note:hover {
-      box-shadow: 0 7px 0 rgba(29, 33, 48, .26);
-      transform: translateY(-2px)
+      box-shadow: 6px 8px 0 var(--card-shd);
+      transform: translate(-1px, -2px)
     }
 
     .note.sel {
-      outline: 3px solid var(--acc);
-      outline-offset: 2px;
+      outline: 3px solid #181715;
+      outline-offset: 3px;
       z-index: 10
     }
 
     .note.grabbed {
       z-index: 45 !important;
-      box-shadow: -4px 16px 0 rgba(23, 27, 39, .28) !important;
+      box-shadow: 9px 15px 0 var(--card-shd) !important;
       transform: translateY(-6px) scale(1.075) rotate(var(--tilt, 0deg)) !important;
       transition: box-shadow .14s cubic-bezier(.2, 1.4, .3, 1), transform .06s linear
     }
@@ -354,13 +353,13 @@
       100% { transform: translateY(0) scale(1) }
     }
 
-    /* Polvito vectorial estilo Nintendo al soltar la nota */
+    /* Polvito vectorial estilo Nintendo/Neobrutalista al soltar la nota */
     .dust-puff {
       position: absolute;
       pointer-events: none;
       z-index: 8;
       background: #fffdf7;
-      border: 2.5px solid #1d2130;
+      border: 2px solid #181715;
       border-radius: 50%;
       transform: translate(-50%, -50%) scale(0);
       animation: dustBurst .42s cubic-bezier(.15, .85, .3, 1) forwards
@@ -385,35 +384,36 @@
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
-      background: var(--acc);
-      color: var(--accink);
-      border: 2px solid var(--panel);
+      background: #181715;
+      color: #fffdf9;
+      border: 2px solid #fffdf9;
       font-weight: 800;
-      font-size: 15px;
+      font-size: 16px;
       line-height: 1;
       display: none;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, .3);
+      box-shadow: 2px 3px 0 rgba(0, 0, 0, .35);
       z-index: 15;
       padding: 0;
       transition: transform .12s
     }
 
     .q-dup:hover {
-      transform: translateX(-50%) scale(1.15)
+      transform: translateX(-50%) scale(1.16);
+      background: var(--acc)
     }
 
     .q-dup.top {
-      top: -14px
+      top: -15px
     }
 
     .q-dup.bot {
-      bottom: -14px
+      bottom: -15px
     }
 
     .note.sel .q-dup {
@@ -423,29 +423,31 @@
     .note b {
       display: block;
       font-weight: 800;
-      font-size: 15px;
+      font-size: 16px;
+      letter-spacing: -0.2px;
       line-height: 1.22;
       overflow-wrap: anywhere
     }
 
     .note.is-title {
-      min-height: 78px;
-      padding: 16px 16px;
+      min-height: 76px;
+      padding: 15px 16px;
       justify-content: center;
       align-items: center;
-      text-align: center
+      text-align: center;
+      border-radius: 16px
     }
 
     .note.is-title b {
-      font-size: 21px;
+      font-size: 20px;
       line-height: 1.18;
       margin: 0
     }
 
     .note-body {
       font-size: 12.5px;
-      line-height: 1.35;
-      opacity: .85;
+      line-height: 1.36;
+      color: var(--card-sub);
       white-space: pre-wrap;
       overflow: hidden;
       display: -webkit-box;
@@ -469,12 +471,12 @@
       font-size: 12px;
       line-height: 1.25;
       cursor: pointer;
-      padding: 2px 3px;
-      border-radius: 4px
+      padding: 3px 4px;
+      border-radius: 6px
     }
 
     .chk-row:hover {
-      background: rgba(0, 0, 0, .06)
+      background: rgba(0, 0, 0, .09)
     }
 
     .chk-row input {
@@ -482,19 +484,19 @@
       height: 14px;
       margin: 1px 0 0;
       cursor: pointer;
-      accent-color: #1b1b22;
+      accent-color: #181715;
       flex-shrink: 0
     }
 
     .chk-row.done span {
       text-decoration: line-through;
-      opacity: .6
+      opacity: .68
     }
 
     .tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 5px;
       margin-top: auto;
       padding-top: 4px;
       align-items: center
@@ -502,33 +504,34 @@
 
     .tag {
       display: inline-block;
-      background: rgba(0, 0, 0, .12);
-      border-radius: 5px;
-      padding: 2px 6px;
+      background: var(--card-pill);
+      border-radius: 6px;
+      padding: 2px 7px;
       font-size: 11px;
-      font-weight: 600
+      font-weight: 700
     }
 
     .drive-btn {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      background: rgba(255, 255, 255, .78);
-      color: #1b1b22;
+      background: #fffdf9;
+      color: #181715;
+      border: 1.5px solid #181715;
       text-decoration: none;
       font-size: 11.5px;
-      font-weight: 700;
-      padding: 4px 8px;
-      border-radius: 6px;
+      font-weight: 800;
+      padding: 4px 9px;
+      border-radius: 8px;
       margin-top: 3px;
       width: fit-content;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, .1);
-      transition: background .15s, transform .1s
+      box-shadow: 2px 2px 0 #181715;
+      transition: transform .1s, box-shadow .1s
     }
 
     .drive-btn:hover {
-      background: #fff;
-      transform: translateY(-1px)
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 #181715
     }
 
     .drive-btn svg {
@@ -544,115 +547,187 @@
       font-size: 11.5px;
       margin-top: 3px;
       padding-top: 5px;
-      border-top: 1px solid rgba(0, 0, 0, .08);
-      opacity: .85;
-      font-weight: 600
+      border-top: 1.5px solid rgba(0, 0, 0, .14);
+      color: var(--card-sub);
+      font-weight: 700
     }
 
-    /* Panel lateral izquierdo fijo de Subgrupos */
+    /* Panel lateral izquierdo fijo de Subgrupos (estilo Neobrutalista con Fichas) */
     #sub-drawer {
-      width: 235px;
+      width: 248px;
       flex-shrink: 0;
-      background: var(--panel);
-      border-right: 1px solid var(--line);
-      padding: 13px;
+      background: var(--bar);
+      border-right: 2px solid var(--line);
+      padding: 15px 14px;
       z-index: 22;
       display: flex;
       flex-direction: column;
-      gap: 9px
+      gap: 12px
     }
 
     .sub-hdr {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      gap: 8px;
       font-weight: 800;
-      font-size: 14px
+      font-size: 19px;
+      letter-spacing: -0.3px;
+      color: var(--ink)
+    }
+
+    .nb-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 24px;
+      padding: 0 7px;
+      border-radius: 99px;
+      background: var(--ink);
+      color: #fffdf9;
+      font-size: 12.5px;
+      font-weight: 800
     }
 
     .sub-list {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      overflow: auto;
-      flex: 1
+      gap: 11px;
+      overflow-y: auto;
+      overflow-x: visible;
+      flex: 1;
+      padding: 3px 6px 10px 2px
     }
 
     .sub-item {
+      --card-shd: #2b261d;
+      --card-ink: #fffdf9;
+      position: relative;
       display: flex;
       align-items: center;
-      gap: 7px;
-      padding: 7px 9px;
-      border-radius: 8px;
+      gap: 8px;
+      padding: 13px 13px;
+      border-radius: 14px;
       cursor: grab;
-      font-size: 13px;
-      font-weight: 600;
-      border: 1px solid transparent;
-      transition: transform .12s, opacity .12s
-    }
-
-    .sub-item:active {
-      cursor: grabbing
-    }
-
-    .sub-item.dragging {
-      opacity: .4
-    }
-
-    .sub-item.drop-above {
-      border-top: 2px solid var(--acc)
-    }
-
-    .sub-item.drop-below {
-      border-bottom: 2px solid var(--acc)
-    }
-
-    .sub-grip {
-      opacity: .4;
-      font-size: 12px;
-      cursor: grab;
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--card-ink);
+      border: 2px solid #181715;
+      box-shadow: 4px 5px 0 var(--card-shd);
       user-select: none;
-      letter-spacing: -1px
-    }
-
-    .sub-item:hover .sub-grip {
-      opacity: .8
+      touch-action: none;
+      transition: transform .15s cubic-bezier(.2, 1.3, .3, 1), box-shadow .15s cubic-bezier(.2, 1.3, .3, 1)
     }
 
     .sub-item:hover {
-      background: var(--bg)
+      transform: translate(-1px, -2px);
+      box-shadow: 5px 7px 0 var(--card-shd)
     }
 
     .sub-item.active {
-      background: var(--acc);
-      color: var(--accink)
+      outline: 2.5px solid #181715;
+      outline-offset: 2px;
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 7px 0 var(--card-shd)
+    }
+
+    .sub-item.grabbed {
+      z-index: 50 !important;
+      cursor: grabbing;
+      box-shadow: 8px 13px 0 var(--card-shd) !important;
+      transform: translateY(-4px) scale(1.04) rotate(var(--stilt, 0deg)) !important;
+      transition: box-shadow .12s, transform .05s linear
+    }
+
+    .sub-item.landed {
+      animation: landBounce .26s cubic-bezier(.25, 1.5, .5, 1)
     }
 
     .sub-item .sub-name {
       flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
-      white-space: nowrap
+      white-space: nowrap;
+      line-height: 1.2
+    }
+
+    .sub-ring {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      opacity: .85;
+      transition: transform .12s, background .12s
+    }
+
+    .sub-item.active .sub-ring::after {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: currentColor
     }
 
     .sub-item .sub-act {
-      opacity: 0;
-      background: transparent;
-      border: 0;
-      padding: 2px 5px;
+      background: rgba(0, 0, 0, .16);
+      border: 1.5px solid rgba(0, 0, 0, .25);
+      width: 26px;
+      height: 26px;
+      padding: 0;
       cursor: pointer;
-      border-radius: 4px;
-      font-size: 12px;
-      color: inherit
-    }
-
-    .sub-item:hover .sub-act {
-      opacity: .8
+      border-radius: 50%;
+      font-size: 12.5px;
+      color: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: transform .12s, background .12s
     }
 
     .sub-item .sub-act:hover {
-      opacity: 1;
-      background: rgba(0, 0, 0, .15)
+      transform: scale(1.12);
+      background: #181715;
+      color: #fffdf9;
+      border-color: #181715
+    }
+
+    .sub-drop-line {
+      height: 5px;
+      border-radius: 99px;
+      background: #181715;
+      box-shadow: 0 0 0 2px #e3b744;
+      margin: -3px 2px;
+      pointer-events: none
+    }
+
+    /* Menú flotante chiquito para editar Subgrupo (Nombre + Color) */
+    #sub-pop {
+      position: fixed;
+      left: 262px;
+      top: 110px;
+      width: 256px;
+      background: var(--panel);
+      border: 2px solid #181715;
+      border-radius: 15px;
+      box-shadow: 5px 7px 0 var(--shd);
+      padding: 11px 13px 13px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 70
+    }
+
+    #sub-pop.open {
+      display: flex
+    }
+
+    #sub-pop.pop-anim {
+      animation: panelPop .24s cubic-bezier(.2, 1.45, .35, 1)
     }
 
     /* Menú flotante tipo tarjeta (con Pop y arrastrable como un post-it) */
@@ -660,12 +735,12 @@
       position: fixed;
       left: 50%;
       top: 90px;
-      width: 318px;
+      width: 320px;
       max-height: calc(100vh - 80px);
       background: var(--panel);
-      border: 2.5px solid #1d2130;
-      border-radius: 14px;
-      box-shadow: 0 8px 0 rgba(29, 33, 48, .24), 0 18px 36px rgba(0, 0, 0, .2);
+      border: 2px solid #181715;
+      border-radius: 16px;
+      box-shadow: 6px 8px 0 var(--shd);
       padding: 12px 14px 14px;
       overflow: auto;
       display: none;
@@ -687,7 +762,7 @@
 
     aside.dragging-panel {
       cursor: grabbing;
-      box-shadow: -5px 16px 0 rgba(23, 27, 39, .3), 0 24px 44px rgba(0, 0, 0, .25);
+      box-shadow: 10px 16px 0 var(--shd);
       transform: scale(1.03) rotate(var(--ptilt, 0deg))
     }
 
@@ -711,15 +786,15 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      padding-bottom: 4px;
-      border-bottom: 1px dashed var(--line);
+      padding-bottom: 6px;
+      border-bottom: 2px dashed rgba(24, 23, 21, .2);
       user-select: none
     }
 
     .panel-grip {
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 800;
-      color: var(--mute);
+      color: var(--ink);
       display: flex;
       align-items: center;
       gap: 6px
@@ -729,7 +804,7 @@
       width: 26px;
       height: 26px;
       border-radius: 50%;
-      border: 1.5px solid var(--line);
+      border: 2px solid var(--line);
       background: var(--bg);
       color: var(--ink);
       font-weight: 800;
@@ -741,33 +816,36 @@
       justify-content: center;
       padding: 0;
       flex-shrink: 0;
+      box-shadow: 2px 2px 0 var(--shd);
       transition: transform .12s, background .12s
     }
 
     .panel-x:hover {
-      background: #d6336c;
+      background: #fa6e61;
       color: #fff;
-      border-color: #d6336c;
       transform: scale(1.1)
     }
 
     label {
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 4px;
       font-size: 12px;
-      color: var(--mute)
+      font-weight: 800;
+      color: var(--ink)
     }
 
     input,
     select,
     textarea {
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      padding: 7px 9px;
+      background: #fffdf9;
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      padding: 7px 10px;
       color: var(--ink);
-      width: 100%
+      font-weight: 600;
+      width: 100%;
+      box-shadow: 2px 2px 0 rgba(24, 23, 21, .12)
     }
 
     textarea {
@@ -782,15 +860,23 @@
     }
 
     .sw button {
-      width: 26px;
-      height: 26px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
-      border: 2px solid transparent;
-      cursor: pointer
+      border: 2px solid #181715;
+      box-shadow: 2px 2px 0 #181715;
+      cursor: pointer;
+      transition: transform .12s
+    }
+
+    .sw button:hover {
+      transform: scale(1.12)
     }
 
     .sw button.on {
-      border-color: var(--ink)
+      outline: 2.5px solid #181715;
+      outline-offset: 2px;
+      transform: scale(1.1)
     }
 
     .cat-wrap {
@@ -801,14 +887,14 @@
     }
 
     .cat-dot-btn {
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       border: 2px solid var(--line);
       cursor: pointer;
       flex-shrink: 0;
       padding: 0;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, .15)
+      box-shadow: 2px 2px 0 var(--shd)
     }
 
     .cat-pop {
@@ -817,10 +903,10 @@
       left: 0;
       margin-top: 6px;
       background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 8px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
+      border: 2px solid var(--line);
+      border-radius: 12px;
+      padding: 9px;
+      box-shadow: 4px 5px 0 var(--shd);
       z-index: 35;
       display: none
     }
@@ -836,10 +922,10 @@
       right: 0;
       margin-top: 5px;
       background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 9px;
+      border: 2px solid var(--line);
+      border-radius: 11px;
       padding: 4px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
+      box-shadow: 4px 5px 0 var(--shd);
       z-index: 36;
       display: none;
       max-height: 170px;
@@ -857,12 +943,12 @@
       align-items: center;
       gap: 7px;
       padding: 6px 8px;
-      border-radius: 6px;
+      border-radius: 7px;
       border: 0;
       background: transparent;
       color: var(--ink);
       font-size: 12.5px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       text-align: left;
       width: 100%
@@ -873,10 +959,10 @@
     }
 
     .cat-dd-dot {
-      width: 11px;
-      height: 11px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
-      border: 1.5px solid rgba(0, 0, 0, .25);
+      border: 1.5px solid #181715;
       flex-shrink: 0
     }
 
@@ -886,7 +972,7 @@
       border-radius: 50%;
       display: inline-block;
       margin-right: 5px;
-      border: 1px solid rgba(0, 0, 0, .15)
+      border: 1px solid rgba(0, 0, 0, .25)
     }
 
     .row {
@@ -900,27 +986,32 @@
     }
 
     .ghost {
-      background: transparent;
-      border: 1px solid var(--line);
-      border-radius: 8px;
+      background: #fffdf9;
+      border: 2px solid var(--line);
+      border-radius: 10px;
       padding: 7px 11px;
       cursor: pointer;
       text-align: center;
       text-decoration: none;
       color: var(--ink);
       font-size: 13px;
+      font-weight: 800;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px
+      gap: 5px;
+      box-shadow: 2px 3px 0 var(--shd);
+      transition: transform .1s, box-shadow .1s, background .12s
     }
 
     .ghost:hover {
-      background: var(--bg)
+      background: var(--bg);
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 4px 0 var(--shd)
     }
 
     .danger {
-      color: #d6336c
+      color: #c92a2a
     }
 
     :focus-visible {
@@ -937,33 +1028,35 @@
       align-items: center;
       gap: 6px;
       font-size: 12px;
-      padding: 5px 11px;
+      padding: 6px 12px;
       border-radius: 99px;
-      border: 1px solid var(--line);
-      background: var(--bg);
+      border: 2px solid var(--line);
+      background: #fffdf9;
+      box-shadow: 2px 3px 0 var(--shd);
       cursor: pointer;
-      font-weight: 600
+      font-weight: 800
     }
 
     .dot {
-      width: 8px;
-      height: 8px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
       background: #99a0b5;
+      border: 1.5px solid #181715;
       display: inline-block
     }
 
     .dot.ok {
-      background: #2b8a3e;
-      box-shadow: 0 0 0 3px rgba(43, 138, 62, .2)
+      background: #0b8766;
+      box-shadow: 0 0 0 3px rgba(11, 135, 102, .22)
     }
 
     .dot.wait {
-      background: #f08c00
+      background: #e3b744
     }
 
     .dot.err {
-      background: #e03131
+      background: #fa6e61
     }
 
     .hud {
@@ -973,11 +1066,11 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      background: var(--bar);
-      border: 1px solid var(--line);
-      border-radius: 10px;
+      background: var(--panel);
+      border: 2px solid var(--line);
+      border-radius: 13px;
       padding: 4px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, .15);
+      box-shadow: 4px 5px 0 var(--shd);
       z-index: 15;
       user-select: none
     }
@@ -985,10 +1078,10 @@
     .hud button {
       background: transparent;
       border: 0;
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 5px 9px;
       cursor: pointer;
-      font-weight: 600;
+      font-weight: 800;
       font-size: 13px;
       color: var(--ink)
     }
@@ -1005,22 +1098,200 @@
     }
 
     .search-in {
-      width: 165px;
-      padding: 5px 10px;
+      width: 170px;
+      padding: 6px 12px;
       border-radius: 99px;
       font-size: 13px;
-      background: var(--bg);
-      border: 1px solid var(--line)
+      background: #fffdf9;
+      border: 2px solid var(--line);
+      box-shadow: 2px 3px 0 var(--shd)
     }
 
-    .user-in {
-      width: 115px;
-      padding: 5px 10px;
+    /* Barra de Colaborador / Avatar y circulito de avatar en los post-its */
+    .user-bar {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .av-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--line);
+      background: #e3b744;
+      color: #181715;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 2px 3px 0 var(--shd);
+      transition: transform .12s, box-shadow .12s
+    }
+
+    .av-btn:hover {
+      transform: translate(-1px, -1px) scale(1.05);
+      box-shadow: 3px 4px 0 var(--shd)
+    }
+
+    .av-btn img,
+    .note-av img,
+    .dd-av img,
+    .chip-av img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block
+    }
+
+    .user-sel-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
       border-radius: 99px;
       font-size: 12.5px;
-      background: var(--bg);
-      border: 1px solid var(--line);
-      font-weight: 600
+      font-weight: 800;
+      background: #fffdf9;
+      border: 2px solid var(--line);
+      box-shadow: 2px 3px 0 var(--shd);
+      cursor: pointer;
+      transition: transform .1s, box-shadow .1s
+    }
+
+    .user-sel-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 4px 0 var(--shd)
+    }
+
+    .add-user-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid var(--line);
+      background: var(--acc);
+      color: var(--accink);
+      font-weight: 800;
+      font-size: 17px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 2px 3px 0 var(--shd);
+      transition: transform .12s, box-shadow .12s
+    }
+
+    .add-user-btn:hover {
+      transform: translate(-1px, -1px) scale(1.06);
+      box-shadow: 3px 4px 0 var(--shd)
+    }
+
+    .dd-av {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid #181715;
+      background: #e3b744;
+      color: #181715;
+      font-size: 11px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0
+    }
+
+    .chip-av {
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      border: 1.5px solid #181715;
+      background: #e3b744;
+      color: #181715;
+      font-size: 10px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      vertical-align: middle;
+      margin-right: 5px;
+      margin-left: -3px
+    }
+
+    .note-av {
+      width: 27px;
+      height: 27px;
+      border-radius: 50%;
+      border: 2px solid #181715;
+      background: #fffdf9;
+      color: #181715;
+      font-size: 12px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 2px 2px 0 rgba(24, 23, 21, .35)
+    }
+
+    #user-pop {
+      position: fixed;
+      right: 18px;
+      top: 56px;
+      width: 264px;
+      background: var(--panel);
+      border: 2px solid #181715;
+      border-radius: 15px;
+      box-shadow: 5px 7px 0 var(--shd);
+      padding: 12px 14px 14px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 75
+    }
+
+    #user-pop.open {
+      display: flex
+    }
+
+    #user-pop.pop-anim {
+      animation: panelPop .24s cubic-bezier(.2, 1.45, .35, 1)
+    }
+
+    .upop-av-row {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .upop-av-big {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid #181715;
+      background: #e3b744;
+      color: #181715;
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 3px 3px 0 var(--shd)
     }
 
     .panel-checks {
@@ -1029,8 +1300,8 @@
       gap: 5px;
       background: var(--bg);
       padding: 8px;
-      border-radius: 8px;
-      border: 1px solid var(--line)
+      border-radius: 10px;
+      border: 2px solid var(--line)
     }
 
     .panel-chk-item {
@@ -1044,7 +1315,8 @@
       width: 15px;
       height: 15px;
       margin: 0;
-      cursor: pointer
+      cursor: pointer;
+      box-shadow: none
     }
 
     .panel-chk-item input[type="text"] {
@@ -1052,7 +1324,8 @@
       background: transparent;
       padding: 2px 4px;
       flex: 1;
-      font-size: 13px
+      font-size: 13px;
+      box-shadow: none
     }
 
     .panel-chk-item button {
@@ -1066,20 +1339,21 @@
     dialog {
       background: var(--panel);
       color: var(--ink);
-      border: 1px solid var(--line);
-      border-radius: 12px;
+      border: 2.5px solid var(--line);
+      border-radius: 16px;
       padding: 18px;
       width: min(460px, 92vw);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, .35)
+      box-shadow: 8px 10px 0 var(--shd)
     }
 
     dialog::backdrop {
-      background: rgba(0, 0, 0, .45)
+      background: rgba(24, 23, 21, .45)
     }
 
     dialog h2 {
       margin: 0 0 6px;
-      font-size: 16px
+      font-size: 17px;
+      font-weight: 800
     }
 
     dialog p {
@@ -1105,7 +1379,16 @@
     <input class="search-in" id="q" type="search" placeholder="🔍 Buscar…">
     <div class="chips" id="chips" title="Filtrar por persona asignada"></div>
     <div class="spacer"></div>
-    <input class="user-in" id="me-name" placeholder="👤 Tu nombre" title="Nombre que verá tu pareja junto a tu cursor">
+    <div class="user-bar" id="user-bar">
+      <button type="button" class="av-btn" id="me-av-btn" title="Clic para subir/cambiar el avatar de este usuario">📷</button>
+      <button type="button" class="user-sel-btn" id="me-sel-btn" title="Seleccionar usuario activo">
+        <span id="me-name-lbl">Elegir usuario</span>
+        <span style="font-size:10px;opacity:.7">▾</span>
+      </button>
+      <button type="button" class="add-user-btn" id="add-user-btn" title="Crear nuevo colaborador">+</button>
+      <div class="cat-dd" id="me-dd" style="left:0;right:auto;min-width:205px;margin-top:7px"></div>
+    </div>
+    <input type="file" id="av-file-in" accept="image/*" style="display:none">
     <button class="sync-btn" id="sync-btn" title="Configurar sincronización en la nube">
       <span class="dot" id="sync-dot"></span>
       <span id="sync-txt">Conectando…</span>
@@ -1115,12 +1398,50 @@
     <!-- Panel lateral izquierdo fijo de Subgrupos -->
     <div id="sub-drawer" aria-label="Subgrupos del proyecto">
       <div class="sub-hdr">
-        <span>📂 Subgrupos</span>
+        <span>Subgrupos</span>
+        <span class="nb-count" id="sub-count">4</span>
       </div>
       <div class="sub-list" id="sub-list"></div>
-      <div class="row" style="gap:5px;margin-top:4px">
-        <input id="new-sub-in" placeholder="Ej. 🎵 Audio, ⚙️ Mecánicas…" style="font-size:12.5px;padding:6px 8px">
-        <button class="btn" id="new-sub-add" style="flex:0 0 auto;padding:6px 10px">+</button>
+      <div class="row" style="gap:6px;margin-top:4px">
+        <input id="new-sub-in" placeholder="Nueva ficha de subgrupo…" style="font-size:12.5px;padding:7px 9px">
+        <button class="btn" id="new-sub-add" style="flex:0 0 auto;padding:7px 11px">+</button>
+      </div>
+    </div>
+
+    <!-- Menú flotante chiquito al lado del Subgrupo para editar nombre y color -->
+    <div id="sub-pop" aria-label="Editar subgrupo">
+      <div class="panel-top">
+        <span class="panel-grip">⋮⋮ Editar subgrupo</span>
+        <button type="button" class="panel-x" id="sub-pop-close" title="Cerrar">✕</button>
+      </div>
+      <label>Nombre
+        <input id="sub-pop-name" autocomplete="off" placeholder="Nombre del subgrupo…">
+      </label>
+      <label>Color de la ficha
+        <div class="sw" id="sub-pop-sw" style="margin-top:2px"></div>
+      </label>
+      <button type="button" class="ghost danger" id="sub-pop-del" style="margin-top:2px">🗑 Eliminar subgrupo</button>
+    </div>
+
+    <!-- Menú flotante para crear o editar Colaborador y su Avatar -->
+    <div id="user-pop" aria-label="Colaborador">
+      <div class="panel-top">
+        <span class="panel-grip" id="upop-title">⋮⋮ Nuevo colaborador</span>
+        <button type="button" class="panel-x" id="upop-close" title="Cerrar">✕</button>
+      </div>
+      <div class="upop-av-row">
+        <button type="button" class="upop-av-big" id="upop-av-btn" title="Subir imagen de avatar">📷</button>
+        <div style="display:flex;flex-direction:column;gap:3px;flex:1">
+          <span style="font-size:12px;font-weight:800">Avatar</span>
+          <button type="button" class="ghost" id="upop-upload-btn" style="padding:4px 8px;font-size:11.5px;width:fit-content">Subir imagen…</button>
+        </div>
+      </div>
+      <label>Nombre del colaborador
+        <input id="upop-name" autocomplete="off" placeholder="Ej. Tristann, Polola…">
+      </label>
+      <div class="row">
+        <button type="button" class="btn" id="upop-save">Guardar</button>
+        <button type="button" class="ghost danger" id="upop-del" style="display:none;flex:0 0 auto">🗑</button>
       </div>
     </div>
 
@@ -1165,7 +1486,8 @@
         </label>
         <label id="lbl-who" style="position:relative">Responsable
           <div class="cat-wrap">
-            <input id="f-who" autocomplete="off" placeholder="Nombre">
+            <button type="button" class="av-btn" id="who-av-btn" style="width:30px;height:30px;font-size:12px" title="Subir/cambiar avatar de este responsable">📷</button>
+            <input id="f-who" autocomplete="off" placeholder="Elegir…">
             <div class="cat-dd" id="who-dd" style="left:0"></div>
           </div>
         </label>
@@ -1218,15 +1540,48 @@
 
     const DRIVE_SVG = `<svg viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>`;
 
-    const COLORS = ["#ffd966", "#ff9f80", "#8fd9b6", "#7cc4f5", "#c9a6f5", "#f5a6cf", "#e9e9e4"];
+    const COLORS = ["#e3b744", "#098967", "#fa6e61", "#4b7bec", "#9b6be8", "#f39237", "#e6decb"];
+    const LEGACY_COLOR_MAP = {
+      "#ffd966": "#e3b744",
+      "#ff9f80": "#fa6e61",
+      "#8fd9b6": "#098967",
+      "#7cc4f5": "#4b7bec",
+      "#c9a6f5": "#9b6be8",
+      "#f5a6cf": "#f39237",
+      "#e9e9e4": "#e6decb"
+    };
+    const CARD_THEMES = {
+      "#e3b744": { shd: "#574518", ink: "#fffdf9", sub: "rgba(255,253,249,.88)", pill: "rgba(0,0,0,.18)" },
+      "#098967": { shd: "#063b2c", ink: "#fffdf9", sub: "rgba(255,253,249,.88)", pill: "rgba(0,0,0,.22)" },
+      "#fa6e61": { shd: "#5c211b", ink: "#fffdf9", sub: "rgba(255,253,249,.9)", pill: "rgba(0,0,0,.2)" },
+      "#4b7bec": { shd: "#1b3166", ink: "#fffdf9", sub: "rgba(255,253,249,.88)", pill: "rgba(0,0,0,.22)" },
+      "#9b6be8": { shd: "#3a2263", ink: "#fffdf9", sub: "rgba(255,253,249,.88)", pill: "rgba(0,0,0,.22)" },
+      "#f39237": { shd: "#5e330c", ink: "#fffdf9", sub: "rgba(255,253,249,.88)", pill: "rgba(0,0,0,.2)" },
+      "#e6decb": { shd: "#4a4335", ink: "#181715", sub: "rgba(24,23,21,.76)", pill: "rgba(24,23,21,.12)" }
+    };
+    function normalizeColor(c) {
+      if (!c) return COLORS[0];
+      const low = c.toLowerCase();
+      return LEGACY_COLOR_MAP[low] || c;
+    }
+    function applyCardTheme(el, rawColor) {
+      const c = normalizeColor(rawColor);
+      const th = CARD_THEMES[c.toLowerCase()] || { shd: "#25221b", ink: "#fffdf9", sub: "rgba(255,253,249,.86)", pill: "rgba(0,0,0,.18)" };
+      el.style.background = c;
+      el.style.setProperty("--card-shd", th.shd);
+      el.style.setProperty("--card-ink", th.ink);
+      el.style.setProperty("--card-sub", th.sub);
+      el.style.setProperty("--card-pill", th.pill);
+      return c;
+    }
     const PEER_COLORS = ["#e03131", "#1971c2", "#2f9e44", "#9c36b5", "#f08c00", "#0c8599"];
     const KEY = "tablero-assets-v2", CFG_KEY = "tablero-assets-cfg-v1", USER_KEY = "tablero-user-v1";
 
     let subgroups = [
-      { id: "principal", name: "📋 General" },
-      { id: "mecanicas", name: "⚙️ Mecánicas" },
-      { id: "arte", name: "🎨 Assets de Arte" },
-      { id: "audio", name: "🎵 Audio y SFX" }
+      { id: "principal", name: "📋 General", color: COLORS[0] },
+      { id: "mecanicas", name: "⚙️ Mecánicas", color: COLORS[1] },
+      { id: "arte", name: "🎨 Assets de Arte", color: COLORS[2] },
+      { id: "audio", name: "🎵 Audio y SFX", color: COLORS[3] }
     ];
     let catColors = {
       "Torres": COLORS[0],
@@ -1235,6 +1590,9 @@
     };
     let subCols = {}; // Número de columnas por subgrupo (por defecto 5)
     let allNotesWho = {}; // Mapa global idNota -> nombre de responsable (de todos los subgrupos)
+    let collabs = []; // Lista global de nombres de colaboradores
+    let avatars = {}; // Mapa nombreColaborador -> dataURL de su imagen de avatar
+    let curUser = ""; // Colaborador activo seleccionado en este navegador
     let curSub = "principal";
     let S = { notes: [], filter: "Todos" }, sel = null, selSet = new Set(), sb = null, channel = null, saveTimers = {}, pendingRows = {}, qStr = "";
     let undoStack = [], cloudReqId = 0;
@@ -1341,18 +1699,275 @@
 
     function getCatColor(cat, fallback) {
       const k = (cat || "").trim();
-      if (!k) return fallback || COLORS[0];
+      if (!k) return normalizeColor(fallback || COLORS[0]);
       if (!catColors[k]) {
         const used = Object.keys(catColors).length;
-        catColors[k] = fallback || COLORS[used % COLORS.length];
+        catColors[k] = normalizeColor(fallback || COLORS[used % COLORS.length]);
+      } else {
+        catColors[k] = normalizeColor(catColors[k]);
       }
       return catColors[k];
     }
 
-    // --- Persistencia de usuario y configuración ---
+    // --- Colaboradores, Avatares y Selector de Usuario Activo ---
+    let avatarTargetCallback = null;
+    let editingUserOrigName = null;
+    let upopTempAvatar = "";
+
+    function fillAvatarEl(el, name, fallbackIcon = "👤") {
+      if (!el) return;
+      const n = (name || "").trim();
+      const av = n ? avatars[n] : "";
+      if (av) {
+        el.innerHTML = `<img src="${av}" alt="${n.replace(/"/g, "&quot;")}">`;
+      } else if (n) {
+        el.textContent = n[0].toUpperCase();
+      } else {
+        el.textContent = fallbackIcon;
+      }
+    }
+
+    function ensureCollab(name) {
+      const n = (name || "").trim();
+      if (!n) return;
+      if (!collabs.includes(n)) collabs.push(n);
+    }
+
+    function getAllWhos() {
+      const set = new Set(collabs.filter(Boolean));
+      Object.keys(avatars).forEach(w => { if (w) set.add(w) });
+      Object.values(allNotesWho).forEach(w => { if (w) set.add(w) });
+      S.notes.forEach(n => { const w = (n.who || "").trim(); if (w) set.add(w) });
+      subgroups.forEach(sg => {
+        try {
+          const raw = localStorage.getItem(KEY + "-" + sg.id);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.notes)) {
+              parsed.notes.forEach(n => { const w = (n.who || "").trim(); if (w) set.add(w) });
+            }
+          }
+        } catch (e) { }
+      });
+      if (curUser) set.add(curUser);
+      collabs = [...set];
+      return collabs;
+    }
+
+    function renderUserBar() {
+      getAllWhos();
+      if (!curUser && collabs.length) {
+        curUser = collabs[0];
+        try { localStorage.setItem(USER_KEY, curUser) } catch (e) { }
+      }
+      $("me-name-lbl").textContent = curUser || "Elegir usuario";
+      fillAvatarEl($("me-av-btn"), curUser, "📷");
+      const n = cur();
+      if (n && $("who-av-btn")) fillAvatarEl($("who-av-btn"), n.who, "📷");
+    }
+
+    function setActiveUser(name) {
+      curUser = (name || "").trim();
+      if (curUser) ensureCollab(curUser);
+      try { localStorage.setItem(USER_KEY, curUser) } catch (e) { }
+      renderUserBar();
+    }
+
+    function resizeImageToAvatar(file, cb) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          const sz = 96;
+          const cv = document.createElement("canvas");
+          cv.width = sz;
+          cv.height = sz;
+          const ctx = cv.getContext("2d");
+          const minSide = Math.min(img.width, img.height);
+          const sx = (img.width - minSide) / 2;
+          const sy = (img.height - minSide) / 2;
+          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, sz, sz);
+          cb(cv.toDataURL("image/jpeg", 0.84));
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function promptAvatarFile(cb) {
+      avatarTargetCallback = cb;
+      const inp = $("av-file-in");
+      inp.value = "";
+      inp.click();
+    }
+
+    $("av-file-in").addEventListener("change", e => {
+      const file = e.target.files && e.target.files[0];
+      if (!file || !avatarTargetCallback) return;
+      const cb = avatarTargetCallback;
+      avatarTargetCallback = null;
+      resizeImageToAvatar(file, dataUrl => cb(dataUrl));
+    });
+
+    function openUserPop(editName = null) {
+      $("me-dd").classList.remove("open");
+      editingUserOrigName = editName;
+      const pop = $("user-pop");
+      $("upop-title").textContent = editName ? "⋮⋮ Editar colaborador" : "⋮⋮ Nuevo colaborador";
+      $("upop-name").value = editName || "";
+      upopTempAvatar = (editName && avatars[editName]) ? avatars[editName] : "";
+      if (upopTempAvatar) {
+        $("upop-av-btn").innerHTML = `<img src="${upopTempAvatar}" alt="" style="width:100%;height:100%;object-fit:cover">`;
+      } else {
+        $("upop-av-btn").textContent = editName ? editName[0].toUpperCase() : "📷";
+      }
+      $("upop-del").style.display = editName ? "inline-flex" : "none";
+      pop.classList.add("open");
+      pop.classList.remove("pop-anim");
+      void pop.offsetWidth;
+      pop.classList.add("pop-anim");
+      $("upop-name").focus();
+      $("upop-name").select();
+    }
+
+    function closeUserPop() {
+      editingUserOrigName = null;
+      $("user-pop").classList.remove("open", "pop-anim");
+    }
+
+    function pickUpopAvatar() {
+      promptAvatarFile(dataUrl => {
+        upopTempAvatar = dataUrl;
+        $("upop-av-btn").innerHTML = `<img src="${dataUrl}" alt="" style="width:100%;height:100%;object-fit:cover">`;
+      });
+    }
+
+    $("upop-av-btn").onclick = pickUpopAvatar;
+    $("upop-upload-btn").onclick = pickUpopAvatar;
+    $("upop-close").onclick = closeUserPop;
+
+    function saveUserPop() {
+      const newName = $("upop-name").value.trim();
+      if (!newName) { $("upop-name").focus(); return }
+      playSfx("spawn");
+      if (editingUserOrigName && editingUserOrigName !== newName) {
+        // Renombrar colaborador existente
+        collabs = collabs.map(c => c === editingUserOrigName ? newName : c);
+        if (avatars[editingUserOrigName]) {
+          avatars[newName] = avatars[editingUserOrigName];
+          delete avatars[editingUserOrigName];
+        }
+        if (curUser === editingUserOrigName) setActiveUser(newName);
+        S.notes.forEach(n => {
+          if ((n.who || "").trim() === editingUserOrigName) { n.who = newName; pushNote(n, 30) }
+        });
+      } else {
+        ensureCollab(newName);
+      }
+      if (upopTempAvatar) avatars[newName] = upopTempAvatar;
+      setActiveUser(newName);
+      saveSubgroupsRemote();
+      closeUserPop();
+      renderUserBar();
+      render();
+      if (sel) syncPanelFromNote(cur());
+    }
+
+    $("upop-save").onclick = saveUserPop;
+    $("upop-name").addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); saveUserPop() }
+      else if (e.key === "Escape") { e.preventDefault(); closeUserPop() }
+    });
+
+    $("upop-del").onclick = () => {
+      if (!editingUserOrigName) return;
+      if (!confirm(`¿Quitar a "${editingUserOrigName}" de la lista de colaboradores?`)) return;
+      collabs = collabs.filter(c => c !== editingUserOrigName);
+      delete avatars[editingUserOrigName];
+      Object.keys(allNotesWho).forEach(k => { if (allNotesWho[k] === editingUserOrigName) delete allNotesWho[k] });
+      S.notes.forEach(n => {
+        if ((n.who || "").trim() === editingUserOrigName) { n.who = ""; pushNote(n, 30) }
+      });
+      if (curUser === editingUserOrigName) setActiveUser(collabs[0] || "");
+      saveSubgroupsRemote();
+      closeUserPop();
+      renderUserBar();
+      render();
+      if (sel) syncPanelFromNote(cur());
+    };
+
+    function openMeDropdown() {
+      const dd = $("me-dd");
+      dd.textContent = "";
+      const list = getAllWhos();
+      if (!list.length) {
+        openUserPop(null);
+        return;
+      }
+      list.forEach(uName => {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;gap:4px";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cat-dd-item";
+        btn.style.flex = "1";
+        const av = document.createElement("span");
+        av.className = "dd-av";
+        fillAvatarEl(av, uName, "👤");
+        const txt = document.createElement("span");
+        txt.style.flex = "1";
+        txt.textContent = uName + (uName === curUser ? " ✓" : "");
+        btn.append(av, txt);
+        btn.onclick = ev => {
+          ev.stopPropagation();
+          playSfx("pickup");
+          setActiveUser(uName);
+          dd.classList.remove("open");
+        };
+        const ed = document.createElement("button");
+        ed.type = "button";
+        ed.className = "ghost";
+        ed.style.cssText = "padding:3px 7px;font-size:11px;box-shadow:none;flex-shrink:0";
+        ed.textContent = "✎";
+        ed.title = "Editar nombre o avatar";
+        ed.onclick = ev => {
+          ev.stopPropagation();
+          playSfx("pickup");
+          openUserPop(uName);
+        };
+        row.append(btn, ed);
+        dd.appendChild(row);
+      });
+      dd.classList.toggle("open");
+    }
+
+    $("me-sel-btn").onclick = e => {
+      e.stopPropagation();
+      closeUserPop();
+      openMeDropdown();
+    };
+    $("me-av-btn").onclick = e => {
+      e.stopPropagation();
+      if (!curUser) { openUserPop(null); return }
+      promptAvatarFile(dataUrl => {
+        avatars[curUser] = dataUrl;
+        ensureCollab(curUser);
+        playSfx("check");
+        saveSubgroupsRemote();
+        renderUserBar();
+        render();
+      });
+    };
+    $("add-user-btn").onclick = e => {
+      e.stopPropagation();
+      playSfx("pickup");
+      openUserPop(null);
+    };
+
     function initUser() {
-      try { const u = localStorage.getItem(USER_KEY); if (u) $("me-name").value = u } catch (e) { }
-      $("me-name").addEventListener("input", e => { try { localStorage.setItem(USER_KEY, e.target.value) } catch (err) { } });
+      try { const u = localStorage.getItem(USER_KEY); if (u) curUser = u.trim() } catch (e) { }
+      if (curUser) ensureCollab(curUser);
+      renderUserBar();
     }
     function getCfg() {
       let c = { url: DEFAULT_SB_URL, key: DEFAULT_SB_KEY };
@@ -1444,71 +2059,198 @@
       return cPart || tPart;
     }
 
-    // --- Subgrupos (Panel izquierdo con arrastrar y soltar) ---
-    let subDragIdx = null;
-    function renderSubgroups() {
-      const w = $("sub-list"); w.textContent = "";
-      subgroups.forEach((sg, idx) => {
-        const d = document.createElement("div");
-        d.className = "sub-item" + (sg.id === curSub ? " active" : "");
-        d.draggable = true;
-        const grip = document.createElement("span"); grip.className = "sub-grip"; grip.textContent = "⋮⋮"; grip.title = "Arrastrar para reordenar";
-        d.appendChild(grip);
-        const sp = document.createElement("span"); sp.className = "sub-name"; sp.textContent = sg.name;
-        d.appendChild(sp);
-        const editB = document.createElement("button"); editB.className = "sub-act"; editB.textContent = "✎"; editB.title = "Renombrar";
-        editB.onclick = e => {
-          e.stopPropagation();
-          const nv = prompt("Nuevo nombre del subgrupo:", sg.name);
-          if (nv && nv.trim()) { sg.name = nv.trim(); saveSubgroupsRemote(); renderSubgroups() }
-        };
-        d.appendChild(editB);
-        if (subgroups.length > 1) {
-          const delB = document.createElement("button"); delB.className = "sub-act"; delB.textContent = "🗑"; delB.title = "Eliminar subgrupo";
-          delB.onclick = e => {
-            e.stopPropagation();
-            if (!confirm(`¿Eliminar el subgrupo "${sg.name}"?`)) return;
-            subgroups = subgroups.filter(x => x.id !== sg.id);
-            if (curSub === sg.id) switchSubgroup(subgroups[0].id);
-            saveSubgroupsRemote(); renderSubgroups();
-          };
-          d.appendChild(delB);
-        }
-        d.addEventListener("dragstart", e => {
-          subDragIdx = idx;
-          d.classList.add("dragging");
-          e.dataTransfer.effectAllowed = "move";
-        });
-        d.addEventListener("dragover", e => {
-          e.preventDefault();
-          if (subDragIdx === null || subDragIdx === idx) return;
-          const rect = d.getBoundingClientRect();
-          const above = (e.clientY - rect.top) < rect.height / 2;
-          d.classList.toggle("drop-above", above);
-          d.classList.toggle("drop-below", !above);
-        });
-        d.addEventListener("dragleave", () => {
-          d.classList.remove("drop-above", "drop-below");
-        });
-        d.addEventListener("drop", e => {
-          e.preventDefault();
-          d.classList.remove("drop-above", "drop-below");
-          if (subDragIdx === null || subDragIdx === idx) return;
-          const rect = d.getBoundingClientRect();
-          const above = (e.clientY - rect.top) < rect.height / 2;
-          const [moved] = subgroups.splice(subDragIdx, 1);
-          let dest = subDragIdx < idx ? idx - 1 : idx;
-          if (!above) dest++;
-          subgroups.splice(dest, 0, moved);
-          subDragIdx = null;
+    // --- Subgrupos (Fichas Neobrutalistas con físicas al arrastrar y panel flotante de edición) ---
+    let editingSubId = null;
+
+    function closeSubEditPop() {
+      editingSubId = null;
+      $("sub-pop").classList.remove("open", "pop-anim");
+    }
+
+    function openSubEditPop(sg, cardEl) {
+      editingSubId = sg.id;
+      const pop = $("sub-pop");
+      const r = cardEl.getBoundingClientRect();
+      $("sub-pop-name").value = sg.name;
+      $("sub-pop-del").style.display = subgroups.length > 1 ? "inline-flex" : "none";
+
+      // Pintar swatches de color de la ficha
+      const sw = $("sub-pop-sw");
+      sw.textContent = "";
+      const curClr = normalizeColor(sg.color || COLORS[0]);
+      COLORS.forEach(c => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.style.background = c;
+        if (curClr.toLowerCase() === c.toLowerCase()) b.className = "on";
+        b.onclick = ev => {
+          ev.stopPropagation();
+          sg.color = c;
+          playSfx("pickup");
           saveSubgroupsRemote();
           renderSubgroups();
+          const newCard = document.querySelector(`.sub-item[data-sub="${sg.id}"]`);
+          if (newCard) openSubEditPop(sg, newCard);
+        };
+        sw.appendChild(b);
+      });
+
+      pop.classList.add("open");
+      const ph = pop.offsetHeight || 220;
+      const left = Math.min(window.innerWidth - 268, r.right + 12);
+      const top = Math.max(58, Math.min(window.innerHeight - ph - 12, r.top - 4));
+      pop.style.left = Math.round(left) + "px";
+      pop.style.top = Math.round(top) + "px";
+      pop.classList.remove("pop-anim");
+      void pop.offsetWidth;
+      pop.classList.add("pop-anim");
+      $("sub-pop-name").focus();
+      $("sub-pop-name").select();
+    }
+
+    $("sub-pop-close").onclick = closeSubEditPop;
+    $("sub-pop-name").addEventListener("input", e => {
+      if (!editingSubId) return;
+      const sg = subgroups.find(x => x.id === editingSubId);
+      if (!sg) return;
+      sg.name = e.target.value || "Sin nombre";
+      const sp = document.querySelector(`.sub-item[data-sub="${sg.id}"] .sub-name`);
+      if (sp) sp.textContent = sg.name;
+      saveSubgroupsRemote();
+    });
+    $("sub-pop-name").addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === "Escape") { e.preventDefault(); closeSubEditPop() }
+    });
+    $("sub-pop-del").onclick = () => {
+      if (!editingSubId || subgroups.length <= 1) return;
+      const sg = subgroups.find(x => x.id === editingSubId);
+      if (!sg) return;
+      if (!confirm(`¿Eliminar el subgrupo "${sg.name}"?`)) return;
+      subgroups = subgroups.filter(x => x.id !== sg.id);
+      closeSubEditPop();
+      if (curSub === sg.id) switchSubgroup(subgroups[0].id);
+      saveSubgroupsRemote();
+      renderSubgroups();
+    };
+    window.addEventListener("pointerdown", e => {
+      if ($("sub-pop").classList.contains("open") && !e.target.closest("#sub-pop") && !e.target.closest(".sub-act")) {
+        closeSubEditPop();
+      }
+    });
+
+    function renderSubgroups(landedId = null) {
+      const w = $("sub-list"); w.textContent = "";
+      const cnt = $("sub-count");
+      if (cnt) cnt.textContent = subgroups.length;
+
+      subgroups.forEach((sg, idx) => {
+        if (!sg.color) sg.color = COLORS[idx % COLORS.length];
+        else sg.color = normalizeColor(sg.color);
+
+        const d = document.createElement("div");
+        d.className = "sub-item" + (sg.id === curSub ? " active" : "") + (sg.id === landedId ? " landed" : "");
+        d.dataset.sub = sg.id;
+        applyCardTheme(d, sg.color);
+
+        const sp = document.createElement("span");
+        sp.className = "sub-name";
+        sp.textContent = sg.name;
+        d.appendChild(sp);
+
+        const editB = document.createElement("button");
+        editB.type = "button";
+        editB.className = "sub-act";
+        editB.textContent = "✎";
+        editB.title = "Editar nombre y color";
+        editB.onpointerdown = e => e.stopPropagation();
+        editB.onclick = e => {
+          e.stopPropagation();
+          playSfx("pickup");
+          openSubEditPop(sg, d);
+        };
+        d.appendChild(editB);
+
+        const ring = document.createElement("span");
+        ring.className = "sub-ring";
+        ring.title = sg.id === curSub ? "Subgrupo activo" : "Ir a este subgrupo";
+        d.appendChild(ring);
+
+        // Clic derecho en la ficha también abre el mini-panel de edición
+        d.addEventListener("contextmenu", e => {
+          e.preventDefault();
+          playSfx("pickup");
+          openSubEditPop(sg, d);
         });
-        d.addEventListener("dragend", () => {
-          subDragIdx = null;
-          d.classList.remove("dragging", "drop-above", "drop-below");
+
+        // Arrastre táctil con físicas (igual que los post-its) para reacomodar fichas
+        d.addEventListener("pointerdown", e => {
+          if (e.button !== 0 || e.target.closest(".sub-act")) return;
+          const sy = e.clientY;
+          let moved = false, lastY = e.clientY, tilt = 0, dropDest = idx;
+          let lineEl = null;
+          d.setPointerCapture(e.pointerId);
+
+          const mv = ev => {
+            const dy = ev.clientY - sy;
+            if (!moved && Math.abs(dy) > 5) {
+              moved = true;
+              closeSubEditPop();
+              d.classList.add("grabbed");
+              playSfx("pickup");
+              lineEl = document.createElement("div");
+              lineEl.className = "sub-drop-line";
+            }
+            if (!moved) return;
+
+            const vy = ev.clientY - lastY;
+            lastY = ev.clientY;
+            tilt = tilt * 0.6 + Math.max(-5, Math.min(5, vy * 0.32)) * 0.4;
+            d.style.setProperty("--stilt", tilt.toFixed(2) + "deg");
+            d.style.transform = `translateY(${dy}px) scale(1.04) rotate(${tilt.toFixed(2)}deg)`;
+
+            // Calcular posición destino entre las fichas
+            const cards = [...w.querySelectorAll(".sub-item")];
+            dropDest = subgroups.length;
+            let insertBeforeEl = null;
+            for (let i = 0; i < cards.length; i++) {
+              const cEl = cards[i];
+              const cr = cEl.getBoundingClientRect();
+              if (ev.clientY < cr.top + cr.height / 2) {
+                dropDest = i;
+                insertBeforeEl = cEl;
+                break;
+              }
+            }
+            if (lineEl) {
+              if (insertBeforeEl) w.insertBefore(lineEl, insertBeforeEl);
+              else w.appendChild(lineEl);
+            }
+          };
+
+          const up = () => {
+            d.removeEventListener("pointermove", mv);
+            d.removeEventListener("pointerup", up);
+            if (lineEl) lineEl.remove();
+            if (moved) {
+              d.classList.remove("grabbed");
+              d.style.transform = "";
+              d.style.setProperty("--stilt", "0deg");
+              playSfx("drop");
+              const [movedSg] = subgroups.splice(idx, 1);
+              const finalIdx = dropDest > idx ? dropDest - 1 : dropDest;
+              subgroups.splice(Math.max(0, Math.min(subgroups.length, finalIdx)), 0, movedSg);
+              saveSubgroupsRemote();
+              renderSubgroups(sg.id);
+            } else {
+              if (curSub !== sg.id) playSfx("pickup");
+              switchSubgroup(sg.id);
+            }
+          };
+
+          d.addEventListener("pointermove", mv);
+          d.addEventListener("pointerup", up);
         });
-        d.onclick = () => switchSubgroup(sg.id);
+
         w.appendChild(d);
       });
     }
@@ -1520,19 +2262,23 @@
           if (Array.isArray(p.subs) && p.subs.length) subgroups = p.subs;
           if (p.catColors && typeof p.catColors === "object") catColors = { ...catColors, ...p.catColors };
           if (p.subCols && typeof p.subCols === "object") subCols = { ...subCols, ...p.subCols };
+          if (Array.isArray(p.collabs)) collabs = [...new Set([...p.collabs, ...collabs])];
+          if (p.avatars && typeof p.avatars === "object") avatars = { ...avatars, ...p.avatars };
         }
+        subgroups.forEach((sg, i) => { sg.color = normalizeColor(sg.color || COLORS[i % COLORS.length]) });
+        Object.keys(catColors).forEach(k => { catColors[k] = normalizeColor(catColors[k]) });
         if (persistLocal) {
-          try { localStorage.setItem(KEY + "-subs", JSON.stringify({ subs: subgroups, catColors, subCols })) } catch (e) { }
+          try { localStorage.setItem(KEY + "-subs", JSON.stringify({ subs: subgroups, catColors, subCols, collabs, avatars })) } catch (e) { }
         }
       } catch (e) { }
     }
     async function saveSubgroupsRemote() {
-      const payload = { subs: subgroups, catColors, subCols };
+      const payload = { subs: subgroups, catColors, subCols, collabs, avatars };
       try { localStorage.setItem(KEY + "-subs", JSON.stringify(payload)) } catch (e) { }
       if (!sb) return;
       await sb.from("notes").upsert({
         id: META_ID, board: META_BOARD, t: "__subgrupos__", cat: "", who: "", st: "", link: "",
-        body: JSON.stringify(payload), color: "#ffd966", x: 0, y: 0, updated_at: new Date().toISOString()
+        body: JSON.stringify(payload), color: "#e3b744", x: 0, y: 0, updated_at: new Date().toISOString()
       });
     }
     function clearPeerCursors() {
@@ -1552,6 +2298,7 @@
     }
     function switchSubgroup(id) {
       if (curSub === id) return;
+      closeSubEditPop();
       flushPendingSaves();
       clearPeerCursors();
       curSub = id;
@@ -1570,13 +2317,15 @@
     function createSubFromInput() {
       const inp = $("new-sub-in"), name = inp.value.trim();
       if (!name) return;
+      playSfx("spawn");
       const slug = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || ("sub-" + Date.now());
       const id = subgroups.some(s => s.id === slug) ? slug + "-" + Date.now().toString().slice(-3) : slug;
-      subgroups.push({ id, name });
+      const color = COLORS[subgroups.length % COLORS.length];
+      subgroups.push({ id, name, color });
       subCols[id] = DEFAULT_COLS;
       inp.value = "";
       saveSubgroupsRemote();
-      renderSubgroups();
+      renderSubgroups(id);
       switchSubgroup(id);
     }
     $("new-sub-add").onclick = createSubFromInput;
@@ -1674,9 +2423,10 @@
           allNotesWho = {};
           allWhoRows.forEach(r => {
             const w = (r.who || "").trim();
-            if (w) allNotesWho[Number(r.id)] = w;
+            if (w) { allNotesWho[Number(r.id)] = w; ensureCollab(w) }
           });
         }
+        renderUserBar();
 
         await fetchSubgroupNotes(curSub);
 
@@ -1686,7 +2436,7 @@
             if (r && Number(r.id) === META_ID && payload.new?.body) {
               unpackMeta(payload.new.body, true);
               S.notes.forEach(n => { if (n.cat && catColors[n.cat]) n.color = catColors[n.cat] });
-              renderSubgroups(); render(); if (sel) syncPanelFromNote(cur());
+              renderSubgroups(); renderUserBar(); render(); if (sel) syncPanelFromNote(cur());
               return;
             }
             if (payload.eventType === "DELETE") {
@@ -1701,7 +2451,7 @@
             } else if (payload.new) {
               const nr = payload.new;
               const nid = Number(nr.id), w = (nr.who || "").trim();
-              if (w) allNotesWho[nid] = w; else delete allNotesWho[nid];
+              if (w) { allNotesWho[nid] = w; ensureCollab(w) } else delete allNotesWho[nid];
               if (nr.board === curSub) {
                 const incoming = { id: nid, t: nr.t, cat: nr.cat, who: nr.who, st: nr.st === "titulo" ? "titulo" : "", link: nr.link, body: nr.body, color: nr.cat ? getCatColor(nr.cat, nr.color) : nr.color, x: nr.x, y: nr.y };
                 const idx = S.notes.findIndex(n => n.id === incoming.id);
@@ -1709,6 +2459,7 @@
                 save(curSub, S); render();
                 if (sel === incoming.id) syncPanelFromNote(incoming);
               }
+              renderUserBar();
             }
           })
           .on("broadcast", { event: "cursor" }, ({ payload }) => {
@@ -1758,7 +2509,7 @@
       const wy = Math.round((e.clientY - rect.top - cam.y) / cam.z);
       channel.send({
         type: "broadcast", event: "cursor", payload: {
-          id: myId, devId: myDevId, name: $("me-name").value.trim() || "Invitado/a", color: myColor, x: wx, y: wy, sub: curSub
+          id: myId, devId: myDevId, name: curUser || "Invitado/a", color: myColor, x: wx, y: wy, sub: curSub
         }
       });
     });
@@ -1888,12 +2639,14 @@
       visibleNotes().forEach(n => {
         const isSelected = selSet.has(n.id) || n.id === sel;
         const isTitle = n.st === "titulo";
-        const noteColor = n.cat ? getCatColor(n.cat, n.color) : (n.color || COLORS[0]);
+        const noteColor = normalizeColor(n.cat ? getCatColor(n.cat, n.color) : (n.color || COLORS[0]));
         n.color = noteColor;
         const d = document.createElement("div");
         d.className = "note" + (isTitle ? " is-title" : "") + (isSelected ? " sel" : "");
         d.dataset.id = n.id;
-        d.style.cssText = `left:${n.x}px;top:${n.y}px;background:${noteColor}`;
+        d.style.left = n.x + "px";
+        d.style.top = n.y + "px";
+        applyCardTheme(d, noteColor);
         const t = document.createElement("b"); t.textContent = n.t || "Sin título"; d.appendChild(t);
 
         if (!isTitle) {
@@ -1938,7 +2691,17 @@
           if (tags.childNodes.length) d.appendChild(tags);
 
           const m = document.createElement("div"); m.className = "meta";
-          m.textContent = n.who || "Sin asignar";
+          const whoTxt = document.createElement("span");
+          const wName = (n.who || "").trim();
+          whoTxt.textContent = wName || "Sin asignar";
+          m.appendChild(whoTxt);
+          if (wName) {
+            const av = document.createElement("span");
+            av.className = "note-av";
+            av.title = wName;
+            fillAvatarEl(av, wName, "👤");
+            m.appendChild(av);
+          }
           d.appendChild(m);
 
           // Botones + en circulito arriba y abajo en las notas de cada columna
@@ -1982,7 +2745,18 @@
       const w = $("chips"); w.textContent = "";
       cs.forEach(c => {
         const x = document.createElement("button"); x.className = "chip" + (c === S.filter ? " on" : "");
-        x.textContent = c === "Todos" ? "👥 Todos" : (c === "Sin asignar" ? "Sin asignar" : "👤 " + c);
+        if (c === "Todos") {
+          x.textContent = "👥 Todos";
+        } else if (c === "Sin asignar") {
+          x.textContent = "Sin asignar";
+        } else {
+          const av = document.createElement("span");
+          av.className = "chip-av";
+          fillAvatarEl(av, c, "👤");
+          const sp = document.createElement("span");
+          sp.textContent = c;
+          x.append(av, sp);
+        }
         x.onclick = () => { S.filter = c; render() };
         w.appendChild(x);
       });
@@ -2309,6 +3083,7 @@
       if (active !== $("f-who")) $("f-who").value = n.who;
       if (active !== $("f-link")) $("f-link").value = n.link;
       if (active !== $("f-body")) $("f-body").value = text;
+      fillAvatarEl($("who-av-btn"), n.who, "📷");
       renderPanelChecks(n, checks, text);
       paintSw(); link();
     }
@@ -2415,23 +3190,25 @@
       $("who-dd").classList.remove("open");
       dd.classList.add("open");
     }
-    function getAllWhos() {
-      const set = new Set();
-      Object.values(allNotesWho).forEach(w => { if (w) set.add(w) });
-      S.notes.forEach(n => { const w = (n.who || "").trim(); if (w) set.add(w) });
-      subgroups.forEach(sg => {
-        try {
-          const raw = localStorage.getItem(KEY + "-" + sg.id);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (parsed && Array.isArray(parsed.notes)) {
-              parsed.notes.forEach(n => { const w = (n.who || "").trim(); if (w) set.add(w) });
-            }
-          }
-        } catch (e) { }
+    $("who-av-btn").onclick = e => {
+      e.stopPropagation();
+      const n = cur();
+      const targetWho = ((n && n.who) || $("f-who").value || curUser || "").trim();
+      if (!targetWho) {
+        openUserPop(null);
+        return;
+      }
+      promptAvatarFile(dataUrl => {
+        avatars[targetWho] = dataUrl;
+        ensureCollab(targetWho);
+        playSfx("check");
+        saveSubgroupsRemote();
+        renderUserBar();
+        render();
+        if (sel) syncPanelFromNote(cur());
       });
-      return [...set];
-    }
+    };
+
     function openWhoDropdown() {
       const dd = $("who-dd");
       dd.textContent = "";
@@ -2444,7 +3221,12 @@
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "cat-dd-item";
-        btn.textContent = "👤 " + whoName;
+        const av = document.createElement("span");
+        av.className = "dd-av";
+        fillAvatarEl(av, whoName, "👤");
+        const txt = document.createElement("span");
+        txt.textContent = whoName;
+        btn.append(av, txt);
         btn.onpointerdown = ev => {
           ev.preventDefault();
           ev.stopPropagation();
@@ -2452,6 +3234,7 @@
           if (!n) return;
           recordUndo();
           $("f-who").value = whoName;
+          fillAvatarEl($("who-av-btn"), whoName, "📷");
           const targets = selSet.size > 1 ? S.notes.filter(x => selSet.has(x.id)) : [n];
           targets.forEach(t => { t.who = whoName; pushNote(t, 50) });
           dd.classList.remove("open");
@@ -2471,6 +3254,8 @@
       if (!e.target.closest("#cat-pop") && e.target !== $("cat-dot-btn")) $("cat-pop").classList.remove("open");
       if (!e.target.closest("#cat-dd") && e.target !== $("f-cat")) $("cat-dd").classList.remove("open");
       if (!e.target.closest("#who-dd") && e.target !== $("f-who")) $("who-dd").classList.remove("open");
+      if (!e.target.closest("#me-dd") && !e.target.closest("#me-sel-btn")) $("me-dd").classList.remove("open");
+      if ($("user-pop").classList.contains("open") && !e.target.closest("#user-pop") && !e.target.closest("#add-user-btn") && !e.target.closest("#me-dd")) closeUserPop();
     });
     function paintSw() {
       const n = cur();
@@ -2529,6 +3314,7 @@
           pushNote(t, 220);
         });
         if (k === "cat") { saveSubgroupsRemote(); paintSw() }
+        if (k === "who") fillAvatarEl($("who-av-btn"), e.target.value, "📷");
         if (k === "link") link();
         render();
       });
@@ -2543,7 +3329,7 @@
       const colNotes = S.notes.filter(x => x.st !== "titulo" && xToCol(x.x, numCols) === c);
       const maxY = colNotes.reduce((m, x) => Math.max(m, x.y || 0), COL_Y0 + 80);
       const id = Date.now();
-      const defWho = (S.filter !== "Todos" && S.filter !== "Sin asignar") ? S.filter : ($("me-name").value.trim() || "");
+      const defWho = (S.filter !== "Todos" && S.filter !== "Sin asignar") ? S.filter : (curUser || "");
       const defColor = COLORS[S.notes.length % COLORS.length];
       const n = {
         id, t: "Nuevo asset", cat: "", who: defWho, st: "", link: "", body: "",
