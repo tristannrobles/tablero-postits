@@ -549,39 +549,17 @@
       font-weight: 600
     }
 
-    /* Panel izquierdo desplegable de Subgrupos */
-    #left-zone {
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 16px;
-      z-index: 28
-    }
-
+    /* Panel lateral izquierdo fijo de Subgrupos */
     #sub-drawer {
-      position: absolute;
-      left: 12px;
-      top: 12px;
-      bottom: 64px;
-      width: 255px;
+      width: 235px;
+      flex-shrink: 0;
       background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 14px;
+      border-right: 1px solid var(--line);
       padding: 13px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, .25);
-      z-index: 29;
+      z-index: 22;
       display: flex;
       flex-direction: column;
-      gap: 9px;
-      transform: translateX(-280px);
-      transition: transform .22s cubic-bezier(.2, .8, .2, 1);
-      pointer-events: none
-    }
-
-    #sub-drawer.open {
-      transform: translateX(0);
-      pointer-events: auto
+      gap: 9px
     }
 
     .sub-hdr {
@@ -1001,10 +979,6 @@
   <header>
     <h1><img src="favicon.png" alt="" width="20" height="20" style="object-fit:contain;flex-shrink:0"
         onerror="this.style.display='none'">Postit Tristes</h1>
-    <button class="ghost" id="sub-btn" title="Abrir subgrupos del proyecto (o acerca el mouse al borde izquierdo)"
-      style="padding:5px 10px;font-weight:700">
-      📂 <span id="cur-sub-lbl">General</span>
-    </button>
     <button class="btn" id="add" title="Atajo: N o doble clic en una columna">+ Nueva nota</button>
     <input class="search-in" id="q" type="search" placeholder="🔍 Buscar…">
     <div class="chips" id="chips" title="Filtrar por persona asignada"></div>
@@ -1016,12 +990,10 @@
     </button>
   </header>
   <main>
-    <!-- Zona sensible izquierda y ventana de Subgrupos -->
-    <div id="left-zone" title="Acerca el mouse para ver Subgrupos"></div>
+    <!-- Panel lateral izquierdo fijo de Subgrupos -->
     <div id="sub-drawer" aria-label="Subgrupos del proyecto">
       <div class="sub-hdr">
         <span>📂 Subgrupos</span>
-        <button class="ghost" id="sub-pin" style="padding:2px 7px;font-size:11px" title="Cerrar panel">✕</button>
       </div>
       <div class="sub-list" id="sub-list"></div>
       <div class="row" style="gap:5px;margin-top:4px">
@@ -1344,8 +1316,6 @@
     let subDragIdx = null;
     function renderSubgroups() {
       const w = $("sub-list"); w.textContent = "";
-      const curObj = subgroups.find(s => s.id === curSub) || subgroups[0];
-      if (curObj) $("cur-sub-lbl").textContent = curObj.name;
       subgroups.forEach((sg, idx) => {
         const d = document.createElement("div");
         d.className = "sub-item" + (sg.id === curSub ? " active" : "");
@@ -1462,12 +1432,6 @@
       fetchSubgroupNotes(id);
     }
 
-    // Drawer izquierdo: abrir al acercar el mouse al borde izquierdo o con el botón
-    let drawerPinned = false;
-    $("left-zone").addEventListener("pointerenter", () => { $("sub-drawer").classList.add("open") });
-    $("sub-drawer").addEventListener("pointerleave", () => { if (!drawerPinned && subDragIdx === null) $("sub-drawer").classList.remove("open") });
-    $("sub-btn").onclick = () => { drawerPinned = !$("sub-drawer").classList.contains("open"); $("sub-drawer").classList.toggle("open", drawerPinned) };
-    $("sub-pin").onclick = () => { drawerPinned = false; $("sub-drawer").classList.remove("open") };
     function createSubFromInput() {
       const inp = $("new-sub-in"), name = inp.value.trim();
       if (!name) return;
