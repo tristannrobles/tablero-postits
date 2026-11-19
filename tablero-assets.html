@@ -172,27 +172,86 @@
       will-change: transform
     }
 
-    /* Guías de auto-alineado (Snap) */
-    .guide-x,
-    .guide-y {
+    /* Carriles de Columnas y botón + para nueva columna */
+    .col-lane {
       position: absolute;
+      width: 236px;
+      border-radius: 14px;
+      background: rgba(120, 130, 160, .08);
+      border: 2px dashed rgba(120, 130, 160, .24);
       pointer-events: none;
-      z-index: 20;
-      display: none
+      transition: background .15s, border-color .15s;
+      z-index: 1
     }
 
-    .guide-x {
-      width: 0;
-      top: -5000px;
-      height: 10000px;
-      border-left: 1.5px dashed var(--acc)
+    .col-lane.active-col {
+      background: rgba(59, 91, 219, .1);
+      border-color: var(--acc)
     }
 
-    .guide-y {
-      height: 0;
-      left: -5000px;
-      width: 10000px;
-      border-top: 1.5px dashed var(--acc)
+    .col-add-note {
+      position: absolute;
+      width: 220px;
+      height: 38px;
+      border-radius: 9px;
+      border: 2px dashed var(--line);
+      background: rgba(255, 255, 255, .25);
+      color: var(--mute);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      z-index: 4;
+      transition: background .15s, color .15s, transform .1s, border-color .15s
+    }
+
+    .col-add-note:hover {
+      background: var(--panel);
+      color: var(--ink);
+      border-color: var(--ink);
+      transform: translateY(-1px)
+    }
+
+    .add-col-btn {
+      position: absolute;
+      width: 58px;
+      height: 78px;
+      border-radius: 12px;
+      border: 2.5px dashed var(--line);
+      background: var(--bar);
+      color: var(--ink);
+      font-size: 26px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+      box-shadow: 0 4px 0 rgba(29, 33, 48, .12);
+      transition: transform .14s cubic-bezier(.2, 1.4, .3, 1), background .15s, border-color .15s
+    }
+
+    .add-col-btn:hover {
+      background: var(--acc);
+      color: var(--accink);
+      border-color: #1d2130;
+      border-style: solid;
+      transform: translateY(-2px) scale(1.05)
+    }
+
+    .drop-slot {
+      position: absolute;
+      width: 220px;
+      height: 6px;
+      border-radius: 99px;
+      background: var(--acc);
+      box-shadow: 0 0 0 3px rgba(59, 91, 219, .22);
+      pointer-events: none;
+      display: none;
+      z-index: 40
     }
 
     /* Caja de selección múltiple */
@@ -235,32 +294,91 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, .25)
     }
 
-    /* Notas (Post-its) */
+    /* Notas (Post-its) con estética vectorial / Nintendo */
     .note {
       position: absolute;
       width: 220px;
       min-height: 132px;
       padding: 11px 12px;
-      border-radius: 7px;
+      border-radius: 10px;
+      border: 2.5px solid #1d2130;
       color: #1b1b22;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, .12), 0 8px 18px -6px rgba(0, 0, 0, .32);
+      box-shadow: 0 5px 0 rgba(29, 33, 48, .22);
       cursor: grab;
       touch-action: none;
       user-select: none;
-      transition: box-shadow .15s;
+      transition: box-shadow .16s cubic-bezier(.2, 1.3, .3, 1), transform .16s cubic-bezier(.2, 1.3, .3, 1);
       display: flex;
       flex-direction: column;
-      gap: 5px
+      gap: 5px;
+      transform-origin: 50% 35%
     }
 
     .note:hover {
-      box-shadow: 0 4px 10px rgba(0, 0, 0, .18), 0 12px 24px -6px rgba(0, 0, 0, .4)
+      box-shadow: 0 7px 0 rgba(29, 33, 48, .26);
+      transform: translateY(-2px)
     }
 
     .note.sel {
       outline: 3px solid var(--acc);
       outline-offset: 2px;
       z-index: 10
+    }
+
+    .note.grabbed {
+      z-index: 45 !important;
+      box-shadow: -4px 16px 0 rgba(23, 27, 39, .28) !important;
+      transform: translateY(-6px) scale(1.075) rotate(var(--tilt, 0deg)) !important;
+      transition: box-shadow .14s cubic-bezier(.2, 1.4, .3, 1), transform .06s linear
+    }
+
+    .note.wobble-start {
+      animation: grabWobble .32s cubic-bezier(.2, 1.5, .4, 1)
+    }
+
+    .note.landed {
+      animation: landBounce .28s cubic-bezier(.25, 1.5, .5, 1)
+    }
+
+    @keyframes grabWobble {
+      0% { transform: scale(1) rotate(0deg) }
+      35% { transform: translateY(-7px) scale(1.1) rotate(-4.5deg) }
+      70% { transform: translateY(-6px) scale(1.06) rotate(3deg) }
+      100% { transform: translateY(-6px) scale(1.075) rotate(var(--tilt, 0deg)) }
+    }
+
+    @keyframes landBounce {
+      0% { transform: translateY(-4px) scale(1.06) }
+      45% { transform: translateY(2px) scale(1.05, 0.93) }
+      75% { transform: translateY(-1px) scale(0.98, 1.02) }
+      100% { transform: translateY(0) scale(1) }
+    }
+
+    /* Polvito vectorial estilo Nintendo al soltar la nota */
+    .dust-puff {
+      position: absolute;
+      pointer-events: none;
+      z-index: 8;
+      background: #fffdf7;
+      border: 2.5px solid #1d2130;
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      animation: dustBurst .42s cubic-bezier(.15, .85, .3, 1) forwards
+    }
+
+    @keyframes dustBurst {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(.35)
+      }
+      55% {
+        opacity: 1;
+        transform: translate(calc(-50% + var(--dx) * .75), calc(-50% + var(--dy) * .75)) scale(1.1)
+      }
+      100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.15)
+      }
     }
 
     .q-dup {
@@ -887,9 +1005,7 @@
       style="padding:5px 10px;font-weight:700">
       📂 <span id="cur-sub-lbl">General</span>
     </button>
-    <button class="btn" id="add" title="Atajo: N o doble clic en el lienzo">+ Nueva nota</button>
-    <button class="ghost" id="add-title" title="Crear post-it de tipo Título (T)"
-      style="padding:6px 11px;font-weight:700">+ Título</button>
+    <button class="btn" id="add" title="Atajo: N o doble clic en una columna">+ Nueva nota</button>
     <input class="search-in" id="q" type="search" placeholder="🔍 Buscar…">
     <div class="chips" id="chips" title="Filtrar por persona asignada"></div>
     <div class="spacer"></div>
@@ -916,8 +1032,7 @@
 
     <div id="scroll">
       <div id="board">
-        <div class="guide-x" id="gx"></div>
-        <div class="guide-y" id="gy"></div>
+        <div class="drop-slot" id="drop-slot"></div>
       </div>
       <div id="marquee"></div>
       <div class="hud" aria-label="Controles de vista">
@@ -925,7 +1040,8 @@
         <button id="z-out" title="Alejar (Ctrl - o -)">−</button>
         <button class="z-pct" id="z-rst" title="Restaurar zoom a 100% (Ctrl 0)">100%</button>
         <button id="z-in" title="Acercar (Ctrl + o +)">+</button>
-        <button id="z-fit" title="Encuadrar todas las notas (F)">⊡</button>
+        <button id="z-fit" title="Encuadrar todas las columnas (F)">⊡</button>
+        <button id="z-sfx" title="Activar/Desactivar sonidos">🔊</button>
       </div>
     </div>
 
@@ -933,9 +1049,9 @@
       <div id="multi-badge"
         style="display:none;background:var(--acc);color:var(--accink);padding:5px 9px;border-radius:6px;font-size:12px;font-weight:700">
       </div>
-      <div class="row" style="gap:6px">
-        <button type="button" class="chip on" id="type-normal" style="flex:1;text-align:center">📄 Nota normal</button>
-        <button type="button" class="chip" id="type-title" style="flex:1;text-align:center">🏷️ Solo título</button>
+      <div id="title-badge"
+        style="display:none;background:var(--bg);border:1px solid var(--line);padding:5px 9px;border-radius:6px;font-size:12px;font-weight:700">
+        🏷️ Título de columna
       </div>
       <label>Título<input id="f-t"></label>
       <div class="row" style="align-items:flex-end">
@@ -1014,6 +1130,7 @@
       "Habilidades": COLORS[1],
       "UI": COLORS[2]
     };
+    let subCols = {}; // Número de columnas por subgrupo (por defecto 5)
     let curSub = "principal";
     let S = { notes: [], filter: "Todos" }, sel = null, selSet = new Set(), sb = null, channel = null, saveTimers = {}, pendingRows = {}, qStr = "";
     let undoStack = [], cloudReqId = 0;
@@ -1023,7 +1140,72 @@
     try { myDevId = localStorage.getItem("tablero-dev-id") || ""; if (!myDevId) { myDevId = "d_" + Math.random().toString(36).slice(2, 10); localStorage.setItem("tablero-dev-id", myDevId) } } catch (e) { myDevId = myId }
     let peers = {}, lastCursorSent = 0;
     const MIN_Z = 0.25, MAX_Z = 2.5, NOTE_W = 220, NOTE_H = 136;
+    const COL_X0 = 32, COL_Y0 = 26, COL_STEP = 252, DEFAULT_COLS = 5;
     const $ = id => document.getElementById(id);
+
+    function colX(c) { return COL_X0 + c * COL_STEP }
+    function xToCol(x, maxCols) {
+      const mc = maxCols || getNumCols();
+      return Math.max(0, Math.min(mc - 1, Math.round(((x || 0) - COL_X0) / COL_STEP)));
+    }
+    function defaultTitleId(subId, c) {
+      let h = 2166136261;
+      for (let i = 0; i < subId.length; i++) h = Math.imul(h ^ subId.charCodeAt(i), 16777619);
+      return (Math.abs(h) % 80000000) * 100 + c + 1;
+    }
+    function getNumCols() {
+      let base = subCols[curSub] || DEFAULT_COLS;
+      S.notes.forEach(n => {
+        if (n.st === "titulo") {
+          const c = Math.round(((n.x || 0) - COL_X0) / COL_STEP);
+          if (c >= base && c < 25) base = c + 1;
+        }
+      });
+      subCols[curSub] = Math.max(1, base);
+      return subCols[curSub];
+    }
+    function ensureColumnTitles(pushNew = false) {
+      const numCols = getNumCols();
+      const titlesByCol = new Map();
+      const extraTitles = [];
+      S.notes.filter(n => n.st === "titulo").forEach(n => {
+        const c = xToCol(n.x, numCols);
+        if (!titlesByCol.has(c)) {
+          n.x = colX(c);
+          n.y = COL_Y0;
+          titlesByCol.set(c, n);
+        } else {
+          extraTitles.push(n);
+        }
+      });
+      for (let c = 0; c < numCols; c++) {
+        if (!titlesByCol.has(c)) {
+          const reused = extraTitles.shift();
+          if (reused) {
+            reused.x = colX(c);
+            reused.y = COL_Y0;
+            titlesByCol.set(c, reused);
+            if (pushNew) pushNote(reused, 20);
+          } else {
+            const tn = {
+              id: defaultTitleId(curSub, c),
+              t: "Columna " + (c + 1),
+              cat: "",
+              who: "",
+              st: "titulo",
+              link: "",
+              body: "",
+              color: COLORS[c % COLORS.length],
+              x: colX(c),
+              y: COL_Y0
+            };
+            S.notes.push(tn);
+            titlesByCol.set(c, tn);
+            if (pushNew) pushNote(tn, 20);
+          }
+        }
+      }
+    }
 
     function cloneNotes(arr) { return JSON.parse(JSON.stringify(arr || [])) }
     function recordUndo() {
@@ -1235,11 +1417,12 @@
         else if (p && typeof p === "object") {
           if (Array.isArray(p.subs) && p.subs.length) subgroups = p.subs;
           if (p.catColors && typeof p.catColors === "object") catColors = { ...catColors, ...p.catColors };
+          if (p.subCols && typeof p.subCols === "object") subCols = { ...subCols, ...p.subCols };
         }
       } catch (e) { }
     }
     async function saveSubgroupsRemote() {
-      const payload = { subs: subgroups, catColors };
+      const payload = { subs: subgroups, catColors, subCols };
       try { localStorage.setItem(KEY + "-subs", JSON.stringify(payload)) } catch (e) { }
       if (!sb) return;
       await sb.from("notes").upsert({
@@ -1268,6 +1451,9 @@
       clearPeerCursors();
       curSub = id;
       sel = null; selSet.clear(); undoStack = []; $("panel").classList.remove("open");
+      if (camAnim) { cancelAnimationFrame(camAnim); camAnim = null }
+      cam = { x: 0, y: 0, z: 1 };
+      applyCam();
       renderSubgroups();
       loadLocalBoard();
       render();
@@ -1288,6 +1474,7 @@
       const slug = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || ("sub-" + Date.now());
       const id = subgroups.some(s => s.id === slug) ? slug + "-" + Date.now().toString().slice(-3) : slug;
       subgroups.push({ id, name });
+      subCols[id] = DEFAULT_COLS;
       inp.value = "";
       saveSubgroupsRemote();
       renderSubgroups();
@@ -1304,12 +1491,13 @@
       try { const r = localStorage.getItem(KEY + "-" + curSub); if (r) { S = JSON.parse(r); hadLocal = true; if (S.filter === "Todas") S.filter = "Todos" } } catch (e) { }
       if (!hadLocal && !S.notes.length && curSub === "principal") {
         S.notes = [
-          { id: 1, t: "Torre de arco nivel 1", cat: "Torres", who: "Ana", st: "", link: "", body: "[x] Boceto base\n[ ] Animación de disparo\nRevisar escala con el mapa.", color: COLORS[0], x: 60, y: 60 },
-          { id: 2, t: "Torre de hielo", cat: "Torres", who: "Beto", st: "", link: "", body: "[ ] Definir paleta de azules", color: COLORS[0], x: 320, y: 60 },
-          { id: 3, t: "Habilidad: bola de fuego", cat: "Habilidades", who: "Ana", st: "", link: "", body: "[ ] Definir VFX\n[ ] Sonido de impacto", color: COLORS[1], x: 60, y: 260 },
-          { id: 4, t: "Iconos de maná", cat: "UI", who: "Beto", st: "", link: "", body: "", color: COLORS[2], x: 320, y: 260 }
+          { id: 1, t: "Torre de arco nivel 1", cat: "Torres", who: "Ana", st: "", link: "", body: "[x] Boceto base\n[ ] Animación de disparo\nRevisar escala con el mapa.", color: COLORS[0], x: colX(0), y: 140 },
+          { id: 2, t: "Torre de hielo", cat: "Torres", who: "Beto", st: "", link: "", body: "[ ] Definir paleta de azules", color: COLORS[0], x: colX(1), y: 140 },
+          { id: 3, t: "Habilidad: bola de fuego", cat: "Habilidades", who: "Ana", st: "", link: "", body: "[ ] Definir VFX\n[ ] Sonido de impacto", color: COLORS[1], x: colX(0), y: 310 },
+          { id: 4, t: "Iconos de maná", cat: "UI", who: "Beto", st: "", link: "", body: "", color: COLORS[2], x: colX(2), y: 140 }
         ];
       }
+      ensureColumnTitles(false);
       S.notes.forEach(n => { if (n.cat) n.color = getCatColor(n.cat, n.color) });
     }
     function save(boardId = curSub, stateObj = S) { try { localStorage.setItem(KEY + "-" + boardId, JSON.stringify(stateObj)) } catch (e) { } }
@@ -1343,9 +1531,9 @@
       try {
         const { data, error } = await sb.from("notes").select("*").eq("board", targetSub).order("id", { ascending: true });
         if (error) throw error;
-        // Si el usuario cambió rápido a otro subgrupo mientras cargaba, descartamos esta respuesta vieja
         if (reqId !== cloudReqId || curSub !== targetSub) return;
         S.notes = (data || []).map(r => ({ id: Number(r.id), t: r.t, cat: r.cat, who: r.who, st: r.st === "titulo" ? "titulo" : "", link: r.link, body: r.body, color: r.cat ? getCatColor(r.cat, r.color) : r.color, x: r.x, y: r.y }));
+        ensureColumnTitles(true);
         save(targetSub, S);
         render();
         if (sel && S.notes.some(n => n.id === sel)) select(sel, false);
@@ -1365,7 +1553,6 @@
         if (channel && sb) { await sb.removeChannel(channel); channel = null }
         if (!sb) sb = window.supabase.createClient(cfg.url.trim(), cfg.key.trim());
 
-        // Cargar lista de subgrupos y colores por categoría
         const { data: metaData } = await sb.from("notes").select("body").eq("id", META_ID).maybeSingle();
         if (metaData && metaData.body) {
           unpackMeta(metaData.body);
@@ -1376,7 +1563,6 @@
 
         await fetchSubgroupNotes(curSub);
 
-        // Canal en tiempo real único: cambios en base de datos + Cursores en vivo (Broadcast)
         channel = sb.channel("room-global", { config: { broadcast: { self: false } } })
           .on("postgres_changes", { event: "*", schema: "public", table: "notes" }, payload => {
             const r = payload.new || payload.old;
@@ -1404,7 +1590,6 @@
             }
           })
           .on("broadcast", { event: "cursor" }, ({ payload }) => {
-            // Ignorar nuestro propio cursor (incluso si tenemos varias pestañas abiertas en el mismo ordenador)
             if (!payload || payload.id === myId || payload.devId === myDevId) return;
             if (payload.sub !== curSub) {
               if (peers[payload.id]) { peers[payload.id].el.remove(); delete peers[payload.id] }
@@ -1460,10 +1645,11 @@
     function visibleNotes() {
       const q = qStr.trim().toLowerCase();
       return S.notes.filter(n => {
+        if (n.st === "titulo") return true; // Los títulos de columna siempre permanecen visibles hasta arriba
         if (S.filter !== "Todos") {
           const w = (n.who || "").trim();
           if (S.filter === "Sin asignar") {
-            if (w || n.st === "titulo") return false;
+            if (w) return false;
           } else if (w !== S.filter) {
             return false;
           }
@@ -1473,8 +1659,108 @@
       });
     }
 
-    // --- Renderizado del Tablero ---
+    // --- Renderizado del Tablero por Columnas y Auto-apilado ---
+    function layoutColumns(pushChanged = false) {
+      const b = $("board");
+      const numCols = getNumCols();
+      b.querySelectorAll(".col-lane,.col-add-note,.add-col-btn").forEach(el => el.remove());
+
+      for (let c = 0; c < numCols; c++) {
+        const cx = colX(c);
+        const lane = document.createElement("div");
+        lane.className = "col-lane";
+        lane.dataset.col = c;
+        lane.style.left = (cx - 8) + "px";
+        lane.style.top = (COL_Y0 - 8) + "px";
+        b.appendChild(lane);
+
+        // Posicionar el post-it de título de esta columna hasta arriba
+        const tNote = S.notes.find(n => n.st === "titulo" && xToCol(n.x, numCols) === c);
+        let curY = COL_Y0 + 78 + 16;
+        if (tNote) {
+          const changed = tNote.x !== cx || tNote.y !== COL_Y0;
+          tNote.x = cx;
+          tNote.y = COL_Y0;
+          const tEl = b.querySelector(`.note[data-id="${tNote.id}"]`);
+          if (tEl) {
+            if (!tEl.classList.contains("grabbed")) {
+              tEl.style.left = cx + "px";
+              tEl.style.top = COL_Y0 + "px";
+            }
+            curY = COL_Y0 + (tEl.offsetHeight || 78) + 16;
+          }
+          if (pushChanged && changed) pushNote(tNote, 30);
+        }
+
+        // Apilar automáticamente las notas de esta columna una debajo de otra
+        const colNotes = visibleNotes()
+          .filter(n => n.st !== "titulo" && xToCol(n.x, numCols) === c)
+          .sort((a, b2) => (a.y - b2.y) || (a.id - b2.id));
+
+        colNotes.forEach(n => {
+          const el = b.querySelector(`.note[data-id="${n.id}"]`);
+          const changed = n.x !== cx || n.y !== curY;
+          n.x = cx;
+          n.y = curY;
+          if (el) {
+            if (!el.classList.contains("grabbed")) {
+              el.style.left = cx + "px";
+              el.style.top = curY + "px";
+            }
+            curY += (el.offsetHeight || NOTE_H) + 14;
+          } else {
+            curY += NOTE_H + 14;
+          }
+          if (pushChanged && changed) pushNote(n, 30);
+        });
+
+        lane.style.height = Math.max(380, curY - COL_Y0 + 58) + "px";
+
+        // Botón "+ Añadir nota" al final de cada columna
+        const addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "col-add-note";
+        addBtn.textContent = "+ Añadir nota";
+        addBtn.style.left = cx + "px";
+        addBtn.style.top = (curY + 2) + "px";
+        addBtn.onpointerdown = ev => ev.stopPropagation();
+        addBtn.onclick = ev => {
+          ev.stopPropagation();
+          addNoteInCol(c);
+        };
+        b.appendChild(addBtn);
+      }
+
+      // Botón "+" a la derecha de la última columna para agregar una nueva columna
+      const newColBtn = document.createElement("button");
+      newColBtn.type = "button";
+      newColBtn.className = "add-col-btn";
+      newColBtn.textContent = "+";
+      newColBtn.title = "Agregar nueva columna";
+      newColBtn.style.left = colX(numCols) + "px";
+      newColBtn.style.top = COL_Y0 + "px";
+      newColBtn.onpointerdown = ev => ev.stopPropagation();
+      newColBtn.onclick = ev => {
+        ev.stopPropagation();
+        recordUndo();
+        playSfx("spawn");
+        const nextC = getNumCols();
+        subCols[curSub] = nextC + 1;
+        ensureColumnTitles(true);
+        saveSubgroupsRemote();
+        render();
+        const newTitle = S.notes.find(n => n.st === "titulo" && xToCol(n.x, subCols[curSub]) === nextC);
+        if (newTitle) {
+          select(newTitle.id, false);
+          $("f-t").focus(); $("f-t").select();
+          spawnDust(newTitle.x, newTitle.y, NOTE_W, 78);
+        }
+      };
+      b.appendChild(newColBtn);
+    }
+
     function render() {
+      ensureColumnTitles(false);
       const b = $("board");
       b.querySelectorAll(".note").forEach(el => el.remove());
       visibleNotes().forEach(n => {
@@ -1502,6 +1788,7 @@
               cb.onchange = () => {
                 recordUndo();
                 checks[idx].done = cb.checked;
+                playSfx(cb.checked ? "check" : "drop");
                 n.body = serializeBody(checks, text);
                 pushNote(n, 50); render();
                 if (sel === n.id) syncPanelFromNote(n);
@@ -1531,32 +1818,38 @@
           const m = document.createElement("div"); m.className = "meta";
           m.textContent = n.who || "Sin asignar";
           d.appendChild(m);
-        }
 
-        // Botones + en circulito arriba y abajo al seleccionar la nota
-        ["top", "bot"].forEach(pos => {
-          const qb = document.createElement("button");
-          qb.type = "button";
-          qb.className = "q-dup " + pos;
-          qb.textContent = "+";
-          qb.title = pos === "top" ? "Duplicar nota arriba" : "Duplicar nota abajo";
-          qb.onpointerdown = ev => ev.stopPropagation();
-          qb.onclick = ev => {
-            ev.stopPropagation();
-            recordUndo();
-            const h = d.offsetHeight || (isTitle ? 78 : NOTE_H);
-            const ny = pos === "top" ? Math.round(n.y - h - 14) : Math.round(n.y + h + 14);
-            const copy = { ...JSON.parse(JSON.stringify(n)), id: Date.now(), x: n.x, y: ny };
-            S.notes.push(copy);
-            selSet.clear(); selSet.add(copy.id);
-            pushNote(copy, 0); render(); select(copy.id, false);
-          };
-          d.appendChild(qb);
-        });
+          // Botones + en circulito arriba y abajo en las notas de cada columna
+          ["top", "bot"].forEach(pos => {
+            const qb = document.createElement("button");
+            qb.type = "button";
+            qb.className = "q-dup " + pos;
+            qb.textContent = "+";
+            qb.title = pos === "top" ? "Duplicar nota arriba" : "Duplicar nota abajo";
+            qb.onpointerdown = ev => ev.stopPropagation();
+            qb.onclick = ev => {
+              ev.stopPropagation();
+              recordUndo();
+              playSfx("spawn");
+              const ny = pos === "top" ? n.y - 5 : n.y + 5;
+              const copy = { ...JSON.parse(JSON.stringify(n)), id: Date.now(), x: n.x, y: ny };
+              S.notes.push(copy);
+              selSet.clear(); selSet.add(copy.id);
+              render();
+              layoutColumns(true);
+              pushNote(copy, 0);
+              select(copy.id, false);
+              const cEl = document.querySelector(`.note[data-id="${copy.id}"]`);
+              spawnDust(copy.x, copy.y, NOTE_W, cEl ? cEl.offsetHeight : NOTE_H);
+            };
+            d.appendChild(qb);
+          });
+        }
 
         d.addEventListener("pointerdown", e => dragNote(e, n, d));
         b.appendChild(d);
       });
+      layoutColumns(false);
       chips(); lists();
     }
     function chips() {
@@ -1577,33 +1870,145 @@
       $("whos").innerHTML = [...new Set(S.notes.map(n => n.who).filter(Boolean))].map(c => `<option value="${c.replace(/"/g, "&quot;")}">`).join("")
     }
 
-    // --- Auto-alineado (Snap) y Arrastre de 1 o varias notas ---
+    // --- Sintetizador de Sonidos estilo Nintendo (Web Audio API) y Polvito Vectorial ---
+    let audioCtx = null, sfxMuted = false;
+    try { sfxMuted = localStorage.getItem("tablero-sfx-mute") === "1" } catch (e) {}
+    function updateSfxBtn() {
+      const b = $("z-sfx");
+      if (b) b.textContent = sfxMuted ? "🔇" : "🔊";
+    }
+    updateSfxBtn();
+    $("z-sfx").onclick = () => {
+      sfxMuted = !sfxMuted;
+      try { localStorage.setItem("tablero-sfx-mute", sfxMuted ? "1" : "0") } catch (e) {}
+      updateSfxBtn();
+      if (!sfxMuted) playSfx("pickup");
+    };
+
+    function playSfx(kind) {
+      if (sfxMuted) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (kind === "pickup") {
+          // "Pop" agudo y redondito hacia arriba al levantar la tarjeta
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(260, now);
+          osc.frequency.exponentialRampToValueAtTime(590, now + 0.068);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.18, now + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (kind === "drop") {
+          // "Plop / Thump" cálido al soltar la tarjeta en el tablero
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(310, now);
+          osc.frequency.exponentialRampToValueAtTime(115, now + 0.085);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.22, now + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
+          osc.start(now);
+          osc.stop(now + 0.1);
+        } else if (kind === "spawn") {
+          // Burbuja / Pop doble al crear o duplicar nota
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(340, now);
+          osc.frequency.exponentialRampToValueAtTime(720, now + 0.085);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.17, now + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+          osc.start(now);
+          osc.stop(now + 0.095);
+        } else if (kind === "check") {
+          // Ding alegre estilo Nintendo al completar subtarea
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(587.33, now); // D5
+          osc.frequency.setValueAtTime(880, now + 0.055); // A5
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.16, now + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+          osc.start(now);
+          osc.stop(now + 0.19);
+        }
+      } catch (e) {}
+    }
+
+    function spawnDust(x, y, w, h) {
+      const b = $("board");
+      const puffs = [
+        // Esquina y borde inferior izquierdo
+        { sx: x + 12, sy: y + h - 4, dx: -34, dy: 14, sz: 18 },
+        { sx: x + 4, sy: y + h - 18, dx: -28, dy: -6, sz: 13 },
+        // Centro inferior
+        { sx: x + w * 0.35, sy: y + h, dx: -12, dy: 24, sz: 15 },
+        { sx: x + w * 0.65, sy: y + h, dx: 14, dy: 22, sz: 16 },
+        // Esquina y borde inferior derecho
+        { sx: x + w - 12, sy: y + h - 4, dx: 36, dy: 14, sz: 19 },
+        { sx: x + w - 4, sy: y + h - 18, dx: 28, dy: -6, sz: 13 },
+        // Costados superiores
+        { sx: x + 6, sy: y + 18, dx: -24, dy: -14, sz: 12 },
+        { sx: x + w - 6, sy: y + 18, dx: 24, dy: -14, sz: 12 }
+      ];
+      puffs.forEach(p => {
+        const el = document.createElement("div");
+        el.className = "dust-puff";
+        const jx = (Math.random() - 0.5) * 8, jy = (Math.random() - 0.5) * 8;
+        el.style.width = p.sz + "px";
+        el.style.height = p.sz + "px";
+        el.style.left = p.sx + "px";
+        el.style.top = p.sy + "px";
+        el.style.setProperty("--dx", Math.round(p.dx + jx) + "px");
+        el.style.setProperty("--dy", Math.round(p.dy + jy) + "px");
+        b.appendChild(el);
+        setTimeout(() => el.remove(), 440);
+      });
+    }
+
+    // --- Arrastre a Columnas con Auto-acomodo, Físicas de Tambaleo y Polvito ---
     function dragNote(e, n, d) {
       if (e.button === 1 || spaceDown) return;
       if (e.button !== 0) return;
       e.stopPropagation();
 
-      if (e.shiftKey) {
+      if (e.shiftKey && n.st !== "titulo") {
         if (selSet.has(n.id)) selSet.delete(n.id); else selSet.add(n.id);
         sel = n.id;
         updateSelectionUI();
+        playSfx("pickup");
         return;
       }
-      if (!selSet.has(n.id)) {
+      if (!selSet.has(n.id) || n.st === "titulo") {
         selSet.clear(); selSet.add(n.id);
       }
       sel = n.id;
       updateSelectionUI();
 
-      const movingNotes = S.notes.filter(x => selSet.has(x.id));
+      const isTitleDrag = n.st === "titulo";
+      const numCols = getNumCols();
+      const startCol = xToCol(n.x, numCols);
+      const movingNotes = isTitleDrag ? [n] : S.notes.filter(x => selSet.has(x.id) && x.st !== "titulo");
+      const movingEls = movingNotes.map(mn => ({ mn, el: document.querySelector(`.note[data-id="${mn.id}"]`) })).filter(x => x.el);
       const origPos = new Map(movingNotes.map(x => [x.id, { x: x.x, y: x.y }]));
-      const otherNotes = visibleNotes().filter(x => !selSet.has(x.id));
       const sx = e.clientX, sy = e.clientY, ox = n.x, oy = n.y;
-      let moved = false;
-      d.setPointerCapture(e.pointerId); d.style.cursor = "grabbing";
+      let moved = false, lastX = e.clientX, tilt = 0;
+      let hoverCol = startCol, insertSortY = n.y;
 
-      const gx = $("gx"), gy = $("gy");
-      const SNAP = 8;
+      playSfx("pickup");
+      movingEls.forEach(({ el }) => {
+        el.classList.remove("landed");
+        el.classList.add("grabbed", "wobble-start");
+        setTimeout(() => el.classList.remove("wobble-start"), 330);
+      });
+
+      d.setPointerCapture(e.pointerId); d.style.cursor = "grabbing";
+      const dropSlot = $("drop-slot");
 
       const mv = ev => {
         const dx = (ev.clientX - sx) / cam.z, dy = (ev.clientY - sy) / cam.z;
@@ -1611,46 +2016,100 @@
           recordUndo();
           moved = true;
         }
-        let targetX = Math.round(ox + dx), targetY = Math.round(oy + dy);
-        let snapX = null, snapY = null;
+        const vx = ev.clientX - lastX;
+        lastX = ev.clientX;
+        const targetTilt = Math.max(-13, Math.min(13, vx * 0.65));
+        tilt = tilt * 0.65 + targetTilt * 0.35;
 
-        for (const o of otherNotes) {
-          const xCandidates = [
-            { val: o.x, guide: o.x },
-            { val: o.x + NOTE_W + 14, guide: o.x + NOTE_W },
-            { val: o.x - NOTE_W - 14, guide: o.x }
-          ];
-          for (const c of xCandidates) {
-            if (Math.abs(targetX - c.val) <= SNAP) { targetX = c.val; snapX = c.guide; break }
+        const targetX = Math.round(ox + dx), targetY = Math.round(oy + dy);
+        hoverCol = xToCol(targetX, numCols);
+
+        // Resaltar la columna destino
+        document.querySelectorAll(".col-lane").forEach(ln => {
+          ln.classList.toggle("active-col", +ln.dataset.col === hoverCol);
+        });
+
+        if (!isTitleDrag && moved) {
+          // Calcular en qué hueco vertical de la columna destino caerá la nota
+          const colPeers = visibleNotes()
+            .filter(x => x.st !== "titulo" && !selSet.has(x.id) && xToCol(x.x, numCols) === hoverCol)
+            .sort((a, b2) => (a.y - b2.y) || (a.id - b2.id));
+
+          const tNote = S.notes.find(x => x.st === "titulo" && xToCol(x.x, numCols) === hoverCol);
+          const tEl = tNote ? document.querySelector(`.note[data-id="${tNote.id}"]`) : null;
+          const topBase = COL_Y0 + (tEl ? tEl.offsetHeight : 78) + 16;
+
+          let slotY = topBase - 8;
+          insertSortY = topBase - 20;
+
+          for (let i = 0; i < colPeers.length; i++) {
+            const p = colPeers[i];
+            const pEl = document.querySelector(`.note[data-id="${p.id}"]`);
+            const pH = pEl ? pEl.offsetHeight : NOTE_H;
+            const midY = p.y + pH / 2;
+            if (targetY + 30 > midY) {
+              slotY = p.y + pH + 4;
+              const nextP = colPeers[i + 1];
+              insertSortY = nextP ? (p.y + nextP.y) / 2 : p.y + pH + 50;
+            }
           }
-          const yCandidates = [
-            { val: o.y, guide: o.y },
-            { val: o.y + NOTE_H + 14, guide: o.y + NOTE_H },
-            { val: o.y - NOTE_H - 14, guide: o.y }
-          ];
-          for (const c of yCandidates) {
-            if (Math.abs(targetY - c.val) <= SNAP) { targetY = c.val; snapY = c.guide; break }
-          }
+          dropSlot.style.left = colX(hoverCol) + "px";
+          dropSlot.style.top = slotY + "px";
+          dropSlot.style.display = "block";
         }
 
-        if (snapX !== null) { gx.style.left = snapX + "px"; gx.style.display = "block" } else gx.style.display = "none";
-        if (snapY !== null) { gy.style.top = snapY + "px"; gy.style.display = "block" } else gy.style.display = "none";
-
-        const realDx = targetX - ox, realDy = targetY - oy;
-        movingNotes.forEach(mn => {
+        movingEls.forEach(({ mn, el }) => {
           const op = origPos.get(mn.id);
-          mn.x = op.x + realDx; mn.y = op.y + realDy;
-          const el = document.querySelector(`.note[data-id="${mn.id}"]`);
-          if (el) { el.style.left = mn.x + "px"; el.style.top = mn.y + "px" }
+          mn.x = op.x + (targetX - ox);
+          mn.y = isTitleDrag ? COL_Y0 : op.y + (targetY - oy);
+          el.style.left = mn.x + "px";
+          el.style.top = mn.y + "px";
+          el.style.setProperty("--tilt", tilt.toFixed(2) + "deg");
         });
       };
+
       const up = () => {
         d.removeEventListener("pointermove", mv); d.removeEventListener("pointerup", up);
-        d.style.cursor = ""; gx.style.display = "none"; gy.style.display = "none";
+        d.style.cursor = "";
+        dropSlot.style.display = "none";
+        document.querySelectorAll(".col-lane.active-col").forEach(ln => ln.classList.remove("active-col"));
+
+        movingEls.forEach(({ el }) => {
+          el.classList.remove("grabbed", "wobble-start");
+          el.style.setProperty("--tilt", "0deg");
+        });
+
         if (moved) {
-          movingNotes.forEach(mn => pushNote(mn, 40));
+          if (isTitleDrag) {
+            // Si arrastramos el Título de una columna a otra, intercambiamos ambas columnas completas
+            if (hoverCol !== startCol) {
+              const colANotes = S.notes.filter(x => x.id === n.id || (x.st !== "titulo" && xToCol(x.x, numCols) === startCol));
+              const colBNotes = S.notes.filter(x => x.id !== n.id && xToCol(x.x, numCols) === hoverCol);
+              colANotes.forEach(x => { x.x = colX(hoverCol); pushNote(x, 20) });
+              colBNotes.forEach(x => { x.x = colX(startCol); pushNote(x, 20) });
+            } else {
+              n.x = colX(startCol); n.y = COL_Y0;
+            }
+          } else {
+            // Acomodar las notas arrastradas en su lugar dentro de la columna destino
+            const sortedMoving = [...movingNotes].sort((a, b2) => (origPos.get(a.id).y - origPos.get(b2.id).y));
+            sortedMoving.forEach((mn, idx) => {
+              mn.x = colX(hoverCol);
+              mn.y = insertSortY + idx * 0.5;
+            });
+          }
+          layoutColumns(true);
+          movingNotes.forEach(mn => pushNote(mn, 20));
+          playSfx("drop");
+          movingEls.forEach(({ mn, el }) => {
+            el.classList.add("landed");
+            setTimeout(() => el.classList.remove("landed"), 300);
+            const h = el.offsetHeight || (mn.st === "titulo" ? 78 : NOTE_H);
+            spawnDust(mn.x, mn.y, NOTE_W, h);
+          });
         } else {
-          select(n.id, true);
+          playSfx("drop");
+          select(n.id, false);
         }
       };
       d.addEventListener("pointermove", mv); d.addEventListener("pointerup", up);
@@ -1678,24 +2137,14 @@
       if (smoothZoom) focusNoteSmooth(n);
     }
 
-    function setNoteType(kind) {
-      const targets = S.notes.filter(x => selSet.has(x.id) || x.id === sel);
-      if (!targets.length) return;
-      recordUndo();
-      targets.forEach(t => { t.st = kind; pushNote(t, 40) });
-      render();
-      if (cur()) syncPanelFromNote(cur());
-    }
-    $("type-normal").onclick = () => setNoteType("");
-    $("type-title").onclick = () => setNoteType("titulo");
-
     function syncPanelFromNote(n) {
       if (!n) return;
       const isTitle = n.st === "titulo";
-      $("type-normal").classList.toggle("on", !isTitle);
-      $("type-title").classList.toggle("on", isTitle);
+      $("title-badge").style.display = isTitle ? "block" : "none";
       $("normal-fields").style.display = isTitle ? "none" : "flex";
       $("lbl-who").style.display = isTitle ? "none" : "flex";
+      $("dup").style.display = isTitle ? "none" : "";
+      $("del").textContent = isTitle ? "Borrar columna" : "Borrar";
 
       const active = document.activeElement;
       const { checks, text } = parseBody(n.body);
@@ -1720,6 +2169,7 @@
         cb.onchange = () => {
           recordUndo();
           checks[idx].done = cb.checked;
+          playSfx(cb.checked ? "check" : "drop");
           n.body = serializeBody(checks, $("f-body").value);
           pushNote(n, 50); render(); renderPanelChecks(n, checks, $("f-body").value);
         };
@@ -1750,7 +2200,7 @@
       checks.push({ done: false, text: val });
       inp.value = "";
       n.body = serializeBody(checks, text);
-      pushNote(n, 50); render(); syncPanelFromNote(n);
+      pushNote(n, 50); render(); layoutColumns(true); syncPanelFromNote(n);
     }
     $("chk-add-btn").onclick = addCheckFromPanel;
     $("chk-new").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addCheckFromPanel() } });
@@ -1835,49 +2285,77 @@
     };
     [["f-t", "t"], ["f-cat", "cat"], ["f-who", "who"], ["f-link", "link"], ["f-body", "body"]].forEach(a => bind(...a));
 
-    function addNoteAt(wx, wy, isTitle = false) {
+    function addNoteInCol(colIdx = 0) {
       recordUndo();
+      playSfx("spawn");
+      const numCols = getNumCols();
+      const c = Math.max(0, Math.min(numCols - 1, colIdx));
+      const colNotes = S.notes.filter(x => x.st !== "titulo" && xToCol(x.x, numCols) === c);
+      const maxY = colNotes.reduce((m, x) => Math.max(m, x.y || 0), COL_Y0 + 80);
       const id = Date.now();
       const defWho = (S.filter !== "Todos" && S.filter !== "Sin asignar") ? S.filter : ($("me-name").value.trim() || "");
       const defColor = COLORS[S.notes.length % COLORS.length];
       const n = {
-        id, t: isTitle ? "Título de sección" : "Nuevo asset", cat: "", who: isTitle ? "" : defWho, st: isTitle ? "titulo" : "", link: "", body: "",
-        color: defColor, x: Math.round(wx), y: Math.round(wy)
+        id, t: "Nuevo asset", cat: "", who: defWho, st: "", link: "", body: "",
+        color: defColor, x: colX(c), y: maxY + 200
       };
       S.notes.push(n);
       selSet.clear(); selSet.add(id);
-      pushNote(n, 0); render(); select(id, false); $("f-t").focus(); $("f-t").select();
+      render();
+      layoutColumns(true);
+      pushNote(n, 0);
+      select(id, false);
+      $("f-t").focus(); $("f-t").select();
+      const el = document.querySelector(`.note[data-id="${id}"]`);
+      spawnDust(n.x, n.y, NOTE_W, el ? el.offsetHeight : NOTE_H);
     }
     $("add").onclick = () => {
-      const sc = $("scroll"), rect = sc.getBoundingClientRect();
-      const wx = (rect.width / 2 - cam.x) / cam.z - 110 + (Math.random() * 50 - 25);
-      const wy = (rect.height / 2 - cam.y) / cam.z - 65 + (Math.random() * 50 - 25);
-      addNoteAt(wx, wy, false);
-    };
-    $("add-title").onclick = () => {
-      const sc = $("scroll"), rect = sc.getBoundingClientRect();
-      const wx = (rect.width / 2 - cam.x) / cam.z - 110 + (Math.random() * 50 - 25);
-      const wy = (rect.height / 2 - cam.y) / cam.z - 45 + (Math.random() * 50 - 25);
-      addNoteAt(wx, wy, true);
+      const n = cur();
+      const targetCol = n ? xToCol(n.x, getNumCols()) : 0;
+      addNoteInCol(targetCol);
     };
     $("dup").onclick = () => {
-      const targets = S.notes.filter(x => selSet.has(x.id) || x.id === sel);
+      const targets = S.notes.filter(x => (selSet.has(x.id) || x.id === sel) && x.st !== "titulo");
       if (!targets.length) return;
       recordUndo();
+      playSfx("spawn");
       selSet.clear();
       targets.forEach((n, i) => {
-        const copy = { ...n, id: Date.now() + i, t: n.t + " (copia)", x: n.x + 28, y: n.y + 28 };
+        const copy = { ...n, id: Date.now() + i, t: n.t + " (copia)", x: n.x, y: n.y + 5 };
         S.notes.push(copy); pushNote(copy, 0); selSet.add(copy.id); sel = copy.id;
       });
-      render(); select(sel, false);
+      render(); layoutColumns(true); select(sel, false);
     };
     $("del").onclick = () => {
-      const ids = [...selSet]; if (sel && !selSet.has(sel)) ids.push(sel);
+      const n = cur();
+      if (n && n.st === "titulo") {
+        const numCols = getNumCols();
+        if (numCols <= 1) { alert("Debe quedar al menos 1 columna."); return }
+        const c = xToCol(n.x, numCols);
+        const colNotes = S.notes.filter(x => xToCol(x.x, numCols) === c);
+        if (colNotes.length > 1 && !confirm(`¿Borrar esta columna y sus ${colNotes.length - 1} notas?`)) return;
+        recordUndo();
+        const delIds = colNotes.map(x => x.id);
+        S.notes = S.notes.filter(x => !delIds.includes(x.id));
+        // Recorrer las columnas a la derecha 1 lugar hacia la izquierda
+        S.notes.forEach(x => {
+          const xc = xToCol(x.x, numCols);
+          if (xc > c) { x.x = colX(xc - 1); pushNote(x, 20) }
+        });
+        subCols[curSub] = numCols - 1;
+        saveSubgroupsRemote();
+        sel = null; selSet.clear(); $("panel").classList.remove("open");
+        deleteNotesRemote(delIds);
+        render(); layoutColumns(true);
+        return;
+      }
+      const ids = [...selSet].filter(id => { const item = S.notes.find(x => x.id === id); return item && item.st !== "titulo" });
+      if (sel && !ids.includes(sel) && n && n.st !== "titulo") ids.push(sel);
       if (!ids.length) return;
       recordUndo();
-      S.notes = S.notes.filter(n => !ids.includes(n.id));
+      S.notes = S.notes.filter(x => !ids.includes(x.id));
       sel = null; selSet.clear(); $("panel").classList.remove("open");
-      deleteNotesRemote(ids); render();
+      deleteNotesRemote(ids); render(); layoutColumns(true);
     };
     $("close").onclick = () => { sel = null; selSet.clear(); $("panel").classList.remove("open"); updateSelectionUI() };
     $("q").addEventListener("input", e => { qStr = e.target.value; render() });
@@ -1920,7 +2398,7 @@
             mq.style.left = x1 + "px"; mq.style.top = y1 + "px"; mq.style.width = w + "px"; mq.style.height = h + "px";
             const wx1 = (x1 - cam.x) / cam.z, wy1 = (y1 - cam.y) / cam.z, wx2 = ((x1 + w) - cam.x) / cam.z, wy2 = ((y1 + h) - cam.y) / cam.z;
             selSet.clear(); sel = null;
-            visibleNotes().forEach(n => {
+            visibleNotes().filter(n => n.st !== "titulo").forEach(n => {
               if (n.x + NOTE_W >= wx1 && n.x <= wx2 && n.y + NOTE_H >= wy1 && n.y <= wy2) { selSet.add(n.id); sel = n.id }
             });
             updateSelectionUI();
@@ -1944,8 +2422,7 @@
       if (e.target.id !== "scroll" && e.target.id !== "board") return;
       const rect = $("scroll").getBoundingClientRect();
       const wx = (e.clientX - rect.left - cam.x) / cam.z - 110;
-      const wy = (e.clientY - rect.top - cam.y) / cam.z - 65;
-      addNoteAt(wx, wy, false);
+      addNoteInCol(xToCol(wx, getNumCols()));
     });
 
     window.addEventListener("wheel", e => {
@@ -1963,13 +2440,13 @@
     $("z-undo").onclick = () => undo();
     $("z-in").onclick = () => zoomAt(cam.z * 1.2);
     $("z-out").onclick = () => zoomAt(cam.z / 1.2);
-    $("z-rst").onclick = () => animateCamTo(cam.x, cam.y, 1, 240);
+    $("z-rst").onclick = () => animateCamTo(0, 0, 1, 240);
     $("z-fit").onclick = () => fitAll();
 
     // --- Copiar y Pegar notas (Ctrl + C / Ctrl + V, incluso entre subgrupos) ---
     let clipData = null;
     function copySelectedNotes() {
-      const targets = S.notes.filter(x => selSet.has(x.id) || x.id === sel);
+      const targets = S.notes.filter(x => (selSet.has(x.id) || x.id === sel) && x.st !== "titulo");
       if (!targets.length) return;
       clipData = { sub: curSub, count: 0, notes: cloneNotes(targets) };
       try { localStorage.setItem(KEY + "-clip", JSON.stringify(clipData)) } catch (e) { }
@@ -1980,36 +2457,20 @@
       }
       if (!clipData || !Array.isArray(clipData.notes) || !clipData.notes.length) return;
       recordUndo();
-      clipData.count = (clipData.count || 0) + 1;
-      const sameSub = clipData.sub === curSub;
-      const offset = sameSub ? 28 * clipData.count : 0;
-
-      // Si pegamos en otro subgrupo, centramos el grupo de notas en la vista actual manteniendo su diseño relativo
-      let dx = offset, dy = offset;
-      if (!sameSub) {
-        const sc = $("scroll"), rect = sc.getBoundingClientRect();
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        clipData.notes.forEach(n => {
-          minX = Math.min(minX, n.x); minY = Math.min(minY, n.y);
-          maxX = Math.max(maxX, n.x + NOTE_W); maxY = Math.max(maxY, n.y + NOTE_H);
-        });
-        const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-        const vx = (rect.width / 2 - cam.x) / cam.z, vy = (rect.height / 2 - cam.y) / cam.z;
-        dx = Math.round(vx - cx) + (clipData.count > 1 ? 24 * (clipData.count - 1) : 0);
-        dy = Math.round(vy - cy) + (clipData.count > 1 ? 24 * (clipData.count - 1) : 0);
-      }
-      try { localStorage.setItem(KEY + "-clip", JSON.stringify(clipData)) } catch (e) { }
-
+      playSfx("spawn");
+      const numCols = getNumCols();
       selSet.clear();
       const baseId = Date.now();
       clipData.notes.forEach((n, i) => {
-        const copy = { ...cloneNotes(n), id: baseId + i, x: Math.round(n.x + dx), y: Math.round(n.y + dy) };
+        const c = xToCol(n.x, numCols);
+        const copy = { ...cloneNotes(n), id: baseId + i, st: "", x: colX(c), y: (n.y || 200) + 10 + i };
         S.notes.push(copy);
-        pushNote(copy, 0);
         selSet.add(copy.id);
         sel = copy.id;
       });
       render();
+      layoutColumns(true);
+      S.notes.filter(x => selSet.has(x.id)).forEach(x => pushNote(x, 0));
       if (sel) { $("panel").classList.add("open"); syncPanelFromNote(cur()) }
     }
 
@@ -2034,13 +2495,13 @@
       if ((e.ctrlKey || e.metaKey) && (e.key === "=" || e.key === "+" || e.key === "-" || e.key === "0")) {
         e.preventDefault();
         if (e.key === "-") zoomAt(cam.z / 1.2);
-        else if (e.key === "0") animateCamTo(cam.x, cam.y, 1, 240);
+        else if (e.key === "0") animateCamTo(0, 0, 1, 240);
         else zoomAt(cam.z * 1.2);
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a" && !typing) {
         e.preventDefault();
-        selSet.clear(); visibleNotes().forEach(n => { selSet.add(n.id); sel = n.id });
+        selSet.clear(); visibleNotes().filter(n => n.st !== "titulo").forEach(n => { selSet.add(n.id); sel = n.id });
         updateSelectionUI(); if (sel) { $("panel").classList.add("open"); syncPanelFromNote(cur()) }
         return;
       }
@@ -2053,10 +2514,9 @@
       }
       if (e.key === "+" || e.key === "=") { e.preventDefault(); zoomAt(cam.z * 1.2) }
       else if (e.key === "-" || e.key === "_") { e.preventDefault(); zoomAt(cam.z / 1.2) }
-      else if (e.key === "0") { animateCamTo(cam.x, cam.y, 1, 240) }
+      else if (e.key === "0") { animateCamTo(0, 0, 1, 240) }
       else if (e.key.toLowerCase() === "f") { fitAll() }
       else if (e.key.toLowerCase() === "n") { e.preventDefault(); $("add").click() }
-      else if (e.key.toLowerCase() === "t") { e.preventDefault(); $("add-title").click() }
       else if ((e.key === "Delete" || e.key === "Backspace") && (sel || selSet.size)) { $("del").click() }
       else if (e.key === "Escape") { $("close").click() }
     });
