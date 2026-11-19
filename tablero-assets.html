@@ -1163,7 +1163,12 @@
             <div class="cat-dd" id="cat-dd"></div>
           </div>
         </label>
-        <label id="lbl-who">Responsable<input id="f-who" list="whos" placeholder="Nombre"></label>
+        <label id="lbl-who" style="position:relative">Responsable
+          <div class="cat-wrap">
+            <input id="f-who" autocomplete="off" placeholder="Nombre">
+            <div class="cat-dd" id="who-dd" style="left:0"></div>
+          </div>
+        </label>
       </div>
       <div id="normal-fields" style="display:flex;flex-direction:column;gap:10px">
         <label>Link de Google Drive<input id="f-link" placeholder="https://drive.google.com/…"></label>
@@ -1229,6 +1234,7 @@
       "UI": COLORS[2]
     };
     let subCols = {}; // Número de columnas por subgrupo (por defecto 5)
+    let allNotesWho = {}; // Mapa global idNota -> nombre de responsable (de todos los subgrupos)
     let curSub = "principal";
     let S = { notes: [], filter: "Todos" }, sel = null, selSet = new Set(), sb = null, channel = null, saveTimers = {}, pendingRows = {}, qStr = "";
     let undoStack = [], cloudReqId = 0;
@@ -1601,6 +1607,8 @@
       const targetBoard = boardOverride || curSub;
       if (targetBoard === curSub) save(targetBoard, S);
       if (!sb) return;
+      const wName = (n.who || "").trim();
+      if (wName) allNotesWho[n.id] = wName; else delete allNotesWho[n.id];
       const row = { id: n.id, board: targetBoard, t: n.t || "", cat: n.cat || "", who: n.who || "", st: n.st === "titulo" ? "titulo" : "", link: n.link || "", body: n.body || "", color: n.color || COLORS[0], x: Math.round(n.x || 0), y: Math.round(n.y || 0), updated_at: new Date().toISOString() };
       pendingRows[n.id] = row;
       clearTimeout(saveTimers[n.id]);
@@ -1614,7 +1622,7 @@
     }
     async function deleteNotesRemote(ids) {
       save(curSub, S);
-      ids.forEach(id => { clearTimeout(saveTimers[id]); delete saveTimers[id]; delete pendingRows[id] });
+      ids.forEach(id => { clearTimeout(saveTimers[id]); delete saveTimers[id]; delete pendingRows[id]; delete allNotesWho[id] });
       if (!sb || !ids.length) return;
       const { error } = await sb.from("notes").delete().in("id", ids);
       if (error) setStatus("err", "Error al borrar en nube");
@@ -1627,7 +1635,11 @@
         const { data, error } = await sb.from("notes").select("*").eq("board", targetSub).order("id", { ascending: true });
         if (error) throw error;
         if (reqId !== cloudReqId || curSub !== targetSub) return;
-        S.notes = (data || []).map(r => ({ id: Number(r.id), t: r.t, cat: r.cat, who: r.who, st: r.st === "titulo" ? "titulo" : "", link: r.link, body: r.body, color: r.cat ? getCatColor(r.cat, r.color) : r.color, x: r.x, y: r.y }));
+        S.notes = (data || []).map(r => {
+          const nid = Number(r.id), w = (r.who || "").trim();
+          if (w) allNotesWho[nid] = w; else delete allNotesWho[nid];
+          return { id: nid, t: r.t, cat: r.cat, who: r.who, st: r.st === "titulo" ? "titulo" : "", link: r.link, body: r.body, color: r.cat ? getCatColor(r.cat, r.color) : r.color, x: r.x, y: r.y };
+        });
         ensureColumnTitles(true);
         save(targetSub, S);
         render();
@@ -1656,6 +1668,16 @@
           await saveSubgroupsRemote();
         }
 
+        // Cargar todos los responsables de todos los subgrupos
+        const { data: allWhoRows } = await sb.from("notes").select("id,who").neq("id", META_ID);
+        if (Array.isArray(allWhoRows)) {
+          allNotesWho = {};
+          allWhoRows.forEach(r => {
+            const w = (r.who || "").trim();
+            if (w) allNotesWho[Number(r.id)] = w;
+          });
+        }
+
         await fetchSubgroupNotes(curSub);
 
         channel = sb.channel("room-global", { config: { broadcast: { self: false } } })
@@ -1669,19 +1691,24 @@
             }
             if (payload.eventType === "DELETE") {
               const delId = Number(payload.old.id);
+              delete allNotesWho[delId];
               if (S.notes.some(n => n.id === delId)) {
                 S.notes = S.notes.filter(n => n.id !== delId);
                 selSet.delete(delId);
                 if (sel === delId) { sel = null; $("panel").classList.remove("open") }
                 save(curSub, S); render();
               }
-            } else if (payload.new && payload.new.board === curSub) {
+            } else if (payload.new) {
               const nr = payload.new;
-              const incoming = { id: Number(nr.id), t: nr.t, cat: nr.cat, who: nr.who, st: nr.st === "titulo" ? "titulo" : "", link: nr.link, body: nr.body, color: nr.cat ? getCatColor(nr.cat, nr.color) : nr.color, x: nr.x, y: nr.y };
-              const idx = S.notes.findIndex(n => n.id === incoming.id);
-              if (idx >= 0) S.notes[idx] = incoming; else S.notes.push(incoming);
-              save(curSub, S); render();
-              if (sel === incoming.id) syncPanelFromNote(incoming);
+              const nid = Number(nr.id), w = (nr.who || "").trim();
+              if (w) allNotesWho[nid] = w; else delete allNotesWho[nid];
+              if (nr.board === curSub) {
+                const incoming = { id: nid, t: nr.t, cat: nr.cat, who: nr.who, st: nr.st === "titulo" ? "titulo" : "", link: nr.link, body: nr.body, color: nr.cat ? getCatColor(nr.cat, nr.color) : nr.color, x: nr.x, y: nr.y };
+                const idx = S.notes.findIndex(n => n.id === incoming.id);
+                if (idx >= 0) S.notes[idx] = incoming; else S.notes.push(incoming);
+                save(curSub, S); render();
+                if (sel === incoming.id) syncPanelFromNote(incoming);
+              }
             }
           })
           .on("broadcast", { event: "cursor" }, ({ payload }) => {
@@ -2343,10 +2370,11 @@
       } else a.style.display = "none";
     }
 
-    // --- Selector circular de color y Lista desplegable de Categorías del Subgrupo ---
+    // --- Selector circular de color y Lista desplegable de Categorías (subgrupo actual) y Responsables (todos los subgrupos) ---
     $("cat-dot-btn").onclick = e => {
       e.stopPropagation();
       $("cat-dd").classList.remove("open");
+      $("who-dd").classList.remove("open");
       $("cat-pop").classList.toggle("open");
     };
     function openCatDropdown() {
@@ -2384,13 +2412,65 @@
         dd.appendChild(btn);
       });
       $("cat-pop").classList.remove("open");
+      $("who-dd").classList.remove("open");
+      dd.classList.add("open");
+    }
+    function getAllWhos() {
+      const set = new Set();
+      Object.values(allNotesWho).forEach(w => { if (w) set.add(w) });
+      S.notes.forEach(n => { const w = (n.who || "").trim(); if (w) set.add(w) });
+      subgroups.forEach(sg => {
+        try {
+          const raw = localStorage.getItem(KEY + "-" + sg.id);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.notes)) {
+              parsed.notes.forEach(n => { const w = (n.who || "").trim(); if (w) set.add(w) });
+            }
+          }
+        } catch (e) { }
+      });
+      return [...set];
+    }
+    function openWhoDropdown() {
+      const dd = $("who-dd");
+      dd.textContent = "";
+      const allWhos = getAllWhos();
+      if (!allWhos.length) {
+        dd.classList.remove("open");
+        return;
+      }
+      allWhos.forEach(whoName => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cat-dd-item";
+        btn.textContent = "👤 " + whoName;
+        btn.onpointerdown = ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const n = cur();
+          if (!n) return;
+          recordUndo();
+          $("f-who").value = whoName;
+          const targets = selSet.size > 1 ? S.notes.filter(x => selSet.has(x.id)) : [n];
+          targets.forEach(t => { t.who = whoName; pushNote(t, 50) });
+          dd.classList.remove("open");
+          render();
+        };
+        dd.appendChild(btn);
+      });
+      $("cat-pop").classList.remove("open");
+      $("cat-dd").classList.remove("open");
       dd.classList.add("open");
     }
     $("f-cat").addEventListener("focus", openCatDropdown);
     $("f-cat").addEventListener("click", openCatDropdown);
+    $("f-who").addEventListener("focus", openWhoDropdown);
+    $("f-who").addEventListener("click", openWhoDropdown);
     window.addEventListener("pointerdown", e => {
       if (!e.target.closest("#cat-pop") && e.target !== $("cat-dot-btn")) $("cat-pop").classList.remove("open");
       if (!e.target.closest("#cat-dd") && e.target !== $("f-cat")) $("cat-dd").classList.remove("open");
+      if (!e.target.closest("#who-dd") && e.target !== $("f-who")) $("who-dd").classList.remove("open");
     });
     function paintSw() {
       const n = cur();
