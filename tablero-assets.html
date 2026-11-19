@@ -1143,11 +1143,89 @@
     .av-btn img,
     .note-av img,
     .dd-av img,
-    .chip-av img {
+    .chip-av img,
+    .peer-av img,
+    .sub-peer-av img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block
+    }
+
+    .online-peers {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px
+    }
+
+    .peer-av {
+      position: relative;
+      width: 31px;
+      height: 31px;
+      border-radius: 50%;
+      border: 2px solid #181715;
+      background: #098967;
+      color: #fffdf9;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 2px 3px 0 var(--shd);
+      transition: transform .12s, box-shadow .12s
+    }
+
+    .peer-av:hover {
+      transform: translate(-1px, -1px) scale(1.07);
+      box-shadow: 3px 4px 0 var(--shd)
+    }
+
+    .peer-av-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .peer-online-dot {
+      position: absolute;
+      right: -2px;
+      bottom: -2px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #12b886;
+      border: 2px solid #181715
+    }
+
+    .sub-peers {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0
+    }
+
+    .sub-peer-av {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #181715;
+      background: #fffdf9;
+      color: #181715;
+      font-size: 11px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 2px 2px 0 rgba(24, 23, 21, .35)
     }
 
     .user-sel-btn {
@@ -1380,6 +1458,7 @@
     <div class="chips" id="chips" title="Filtrar por persona asignada"></div>
     <div class="spacer"></div>
     <div class="user-bar" id="user-bar">
+      <div class="online-peers" id="online-peers"></div>
       <button type="button" class="av-btn" id="me-av-btn" title="Clic para subir/cambiar el avatar de este usuario">📷</button>
       <button type="button" class="user-sel-btn" id="me-sel-btn" title="Seleccionar usuario activo">
         <span id="me-name-lbl">Elegir usuario</span>
@@ -1600,7 +1679,7 @@
     let myId = "u_" + Math.random().toString(36).slice(2, 9), myColor = PEER_COLORS[Math.floor(Math.random() * PEER_COLORS.length)];
     let myDevId = "";
     try { myDevId = localStorage.getItem("tablero-dev-id") || ""; if (!myDevId) { myDevId = "d_" + Math.random().toString(36).slice(2, 10); localStorage.setItem("tablero-dev-id", myDevId) } } catch (e) { myDevId = myId }
-    let peers = {}, lastCursorSent = 0;
+    let peers = {}, activePeers = {}, presenceInterval = null, initialSubPicked = false, lastCursorSent = 0;
     const MIN_Z = 0.25, MAX_Z = 2.5, NOTE_W = 220, NOTE_H = 136;
     const COL_X0 = 32, COL_Y0 = 26, COL_STEP = 252, DEFAULT_COLS = 5;
     const $ = id => document.getElementById(id);
@@ -1764,6 +1843,7 @@
       fillAvatarEl($("me-av-btn"), curUser, "📷");
       const n = cur();
       if (n && $("who-av-btn")) fillAvatarEl($("who-av-btn"), n.who, "📷");
+      updateOnlinePeersUI();
     }
 
     function setActiveUser(name) {
@@ -1771,6 +1851,7 @@
       if (curUser) ensureCollab(curUser);
       try { localStorage.setItem(USER_KEY, curUser) } catch (e) { }
       renderUserBar();
+      sendPresencePing();
     }
 
     function resizeImageToAvatar(file, cb) {
@@ -2157,6 +2238,11 @@
         sp.textContent = sg.name;
         d.appendChild(sp);
 
+        const peersBox = document.createElement("div");
+        peersBox.className = "sub-peers";
+        peersBox.dataset.subPeers = sg.id;
+        d.appendChild(peersBox);
+
         const editB = document.createElement("button");
         editB.type = "button";
         editB.className = "sub-act";
@@ -2253,6 +2339,7 @@
 
         w.appendChild(d);
       });
+      updateOnlinePeersUI();
     }
     function unpackMeta(raw, persistLocal = false) {
       try {
@@ -2296,7 +2383,90 @@
         sb.from("notes").upsert(rows).then(({ error }) => { if (error) setStatus("err", "Error al guardar en nube") });
       }
     }
+    function sendPresencePing(isLeave = false) {
+      if (!channel) return;
+      channel.send({
+        type: "broadcast",
+        event: "presence_ping",
+        payload: {
+          id: myId,
+          devId: myDevId,
+          name: curUser || "Invitado/a",
+          sub: curSub,
+          color: myColor,
+          leave: isLeave
+        }
+      });
+    }
+    window.addEventListener("beforeunload", () => sendPresencePing(true));
+
+    function updateOnlinePeersUI() {
+      const topBox = $("online-peers");
+      if (topBox) {
+        topBox.textContent = "";
+        Object.values(activePeers).forEach(p => {
+          const sgObj = subgroups.find(s => s.id === p.sub);
+          const sgName = sgObj ? sgObj.name : p.sub;
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "peer-av";
+          b.style.background = p.color || "#098967";
+          b.title = `🟢 ${p.name} · en ${sgName} (Clic para ir)`;
+          const inner = document.createElement("span");
+          inner.className = "peer-av-inner";
+          fillAvatarEl(inner, p.name, "👤");
+          const dot = document.createElement("span");
+          dot.className = "peer-online-dot";
+          b.append(inner, dot);
+          b.onclick = () => {
+            if (p.sub && p.sub !== curSub) {
+              playSfx("pickup");
+              switchSubgroup(p.sub);
+            }
+          };
+          topBox.appendChild(b);
+        });
+      }
+      document.querySelectorAll(".sub-peers").forEach(box => {
+        const subId = box.dataset.subPeers;
+        box.textContent = "";
+        Object.values(activePeers).filter(p => p.sub === subId).forEach(p => {
+          const av = document.createElement("span");
+          av.className = "sub-peer-av";
+          av.title = `🟢 ${p.name} está aquí`;
+          fillAvatarEl(av, p.name, "👤");
+          box.appendChild(av);
+        });
+      });
+    }
+
+    function touchPeerPresence(p) {
+      if (!p || p.id === myId || p.devId === myDevId) return;
+      const key = p.devId || p.id;
+      if (p.leave) {
+        if (activePeers[key]) {
+          clearTimeout(activePeers[key].timer);
+          delete activePeers[key];
+          updateOnlinePeersUI();
+        }
+        return;
+      }
+      const prev = activePeers[key];
+      if (prev) clearTimeout(prev.timer);
+      const name = (p.name || "").trim() || "Invitado/a";
+      const sub = p.sub || "principal";
+      const color = p.color || "#098967";
+      const changed = !prev || prev.name !== name || prev.sub !== sub;
+      const timer = setTimeout(() => {
+        delete activePeers[key];
+        updateOnlinePeersUI();
+      }, 9500);
+      activePeers[key] = { name, sub, color, timer };
+      if (changed) updateOnlinePeersUI();
+    }
+
     function switchSubgroup(id) {
+      initialSubPicked = true;
       if (curSub === id) return;
       closeSubEditPop();
       flushPendingSaves();
@@ -2311,6 +2481,7 @@
       render();
       const curObj = subgroups.find(s => s.id === curSub);
       if (sb) setStatus("ok", `En vivo · ${curObj ? curObj.name : curSub}`);
+      sendPresencePing();
       fetchSubgroupNotes(id);
     }
 
@@ -2335,6 +2506,7 @@
     function loadLocalBoard(readMeta = false) {
       if (readMeta) {
         try { const subs = localStorage.getItem(KEY + "-subs"); if (subs) unpackMeta(subs, false) } catch (e) { }
+        if (subgroups.length) curSub = subgroups[0].id;
       }
       S = { notes: [], filter: "Todos" };
       let hadLocal = false;
@@ -2412,6 +2584,10 @@
         const { data: metaData } = await sb.from("notes").select("body").eq("id", META_ID).maybeSingle();
         if (metaData && metaData.body) {
           unpackMeta(metaData.body, true);
+          if (!initialSubPicked && subgroups.length) {
+            curSub = subgroups[0].id;
+            loadLocalBoard(false);
+          }
           renderSubgroups();
         } else {
           await saveSubgroupsRemote();
@@ -2462,8 +2638,12 @@
               renderUserBar();
             }
           })
+          .on("broadcast", { event: "presence_ping" }, ({ payload }) => {
+            touchPeerPresence(payload);
+          })
           .on("broadcast", { event: "cursor" }, ({ payload }) => {
             if (!payload || payload.id === myId || payload.devId === myDevId) return;
+            touchPeerPresence(payload);
             if (payload.sub !== curSub) {
               if (peers[payload.id]) { peers[payload.id].el.remove(); delete peers[payload.id] }
               return;
@@ -2474,6 +2654,9 @@
             if (status === "SUBSCRIBED") {
               const curObj = subgroups.find(s => s.id === curSub);
               setStatus("ok", `En vivo · ${curObj ? curObj.name : curSub}`);
+              sendPresencePing();
+              if (presenceInterval) clearInterval(presenceInterval);
+              presenceInterval = setInterval(() => sendPresencePing(), 3000);
             }
           });
       } catch (err) {
