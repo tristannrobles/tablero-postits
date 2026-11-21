@@ -1084,6 +1084,86 @@
       flex: 1
     }
 
+    .countdown-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center
+    }
+
+    .countdown-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 13px;
+      border-radius: 99px;
+      border: 2px solid var(--line);
+      background: #e3b744;
+      color: #181715;
+      font-weight: 800;
+      font-size: 13.5px;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      box-shadow: 2px 3px 0 #574518;
+      user-select: none;
+      white-space: nowrap;
+      transition: transform .14s cubic-bezier(.2, 1.4, .3, 1), box-shadow .14s, background .15s
+    }
+
+    .countdown-btn:hover {
+      transform: translate(-1px, -1px) scale(1.03);
+      box-shadow: 3px 4px 0 #574518;
+      background: #eac152
+    }
+
+    .countdown-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 #574518
+    }
+
+    .countdown-btn.urgent {
+      background: #fa6e61;
+      color: #fffdf9;
+      box-shadow: 2px 3px 0 #5c211b
+    }
+
+    .countdown-pop {
+      position: absolute;
+      top: calc(100% + 9px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 245px;
+      background: var(--panel);
+      border: 2px solid #181715;
+      border-radius: 15px;
+      box-shadow: 5px 7px 0 var(--shd);
+      padding: 11px 13px 13px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 85
+    }
+
+    .countdown-pop.open {
+      display: flex
+    }
+
+    .countdown-pop.pop-anim {
+      animation: cdPop .22s cubic-bezier(.2, 1.45, .35, 1)
+    }
+
+    @keyframes cdPop {
+      0% {
+        opacity: 0;
+        transform: translateX(-50%) scale(.88) translateY(-6px)
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1) translateY(0)
+      }
+    }
+
     .sync-btn {
       display: inline-flex;
       align-items: center;
@@ -1817,6 +1897,22 @@
         flex: 1
       }
 
+      .countdown-btn {
+        height: 30px;
+        padding: 0 9px;
+        font-size: 11.5px;
+        gap: 4px
+      }
+
+      .countdown-pop {
+        position: fixed;
+        left: 12px !important;
+        right: 12px !important;
+        top: 62px !important;
+        width: auto !important;
+        transform: none !important
+      }
+
       .user-bar {
         gap: 5px
       }
@@ -1963,6 +2059,28 @@
       title="Buscar y filtrar">🔍</button>
     <input class="search-in" id="q" type="search" placeholder="🔍 Buscar…">
     <div class="chips" id="chips" title="Filtrar por persona asignada"></div>
+    <div class="spacer"></div>
+    <div class="countdown-wrap" id="countdown-wrap">
+      <button type="button" class="countdown-btn" id="countdown-btn"
+        title="Clic para elegir o cambiar la fecha objetivo">
+        <span>⏳</span>
+        <span id="countdown-lbl">Faltan X días!</span>
+      </button>
+      <div class="countdown-pop" id="countdown-pop" aria-label="Elegir fecha de cuenta regresiva">
+        <div class="panel-top">
+          <span class="panel-grip" style="cursor:default">📅 Fecha objetivo</span>
+          <button type="button" class="panel-x" id="cd-pop-close" title="Cerrar">✕</button>
+        </div>
+        <label>Elegir fecha
+          <input type="date" id="cd-date-in">
+        </label>
+        <div class="row" style="margin-top:2px">
+          <button type="button" class="btn" id="cd-save-btn" style="flex:1;justify-content:center">Guardar</button>
+          <button type="button" class="ghost danger" id="cd-clr-btn" style="display:none;flex:0 0 auto"
+            title="Quitar fecha">🗑</button>
+        </div>
+      </div>
+    </div>
     <div class="spacer"></div>
     <div class="user-bar" id="user-bar">
       <div class="online-peers" id="online-peers"></div>
@@ -2215,6 +2333,7 @@
     let collabs = []; // Lista global de nombres de colaboradores
     let avatars = {}; // Mapa nombreColaborador -> dataURL de su imagen de avatar
     let workSecs = {}; // Mapa nombreColaborador -> segundos totales trabajados
+    let countdownDate = ""; // Fecha objetivo global en formato YYYY-MM-DD para "Faltan X días!"
     let timerRunning = false, timerLastTick = 0, timerInterval = null, timerSyncTicks = 0;
     let curUser = ""; // Colaborador activo seleccionado en este navegador
     let curSub = "principal";
@@ -2502,6 +2621,84 @@
       });
     }
 
+    function renderCountdownUI() {
+      const btn = $("countdown-btn"), lbl = $("countdown-lbl"), clr = $("cd-clr-btn");
+      if (!btn || !lbl) return;
+      const dStr = (countdownDate || "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
+        lbl.textContent = "Faltan X días!";
+        btn.classList.remove("urgent");
+        btn.title = "Clic para elegir la fecha objetivo";
+        if (clr) clr.style.display = "none";
+        return;
+      }
+      const [y, m, d] = dStr.split("-").map(Number);
+      const target = new Date(y, m - 1, d);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const diff = Math.round((target - today) / 86400000);
+      if (diff === 1) {
+        lbl.textContent = "Falta 1 día!";
+      } else if (diff === 0) {
+        lbl.textContent = "¡Faltan 0 días! (Hoy)";
+      } else if (diff < 0) {
+        lbl.textContent = `Pasaron ${Math.abs(diff)} días!`;
+      } else {
+        lbl.textContent = `Faltan ${diff} días!`;
+      }
+      btn.classList.toggle("urgent", diff <= 3);
+      btn.title = `Fecha objetivo: ${dStr} (Clic para modificar)`;
+      if (clr) clr.style.display = "inline-flex";
+    }
+
+    $("countdown-btn").onclick = e => {
+      e.stopPropagation();
+      const pop = $("countdown-pop");
+      const open = !pop.classList.contains("open");
+      if (open) {
+        playSfx("pickup");
+        const inp = $("cd-date-in");
+        if (countdownDate && /^\d{4}-\d{2}-\d{2}$/.test(countdownDate)) {
+          inp.value = countdownDate;
+        } else {
+          const t = new Date();
+          inp.value = [t.getFullYear(), String(t.getMonth() + 1).padStart(2, "0"), String(t.getDate()).padStart(2, "0")].join("-");
+        }
+        pop.classList.remove("pop-anim");
+        pop.classList.add("open");
+        void pop.offsetWidth;
+        pop.classList.add("pop-anim");
+        setTimeout(() => { inp.focus(); try { if (inp.showPicker) inp.showPicker() } catch (_) { } }, 40);
+      } else {
+        pop.classList.remove("open", "pop-anim");
+      }
+    };
+    $("cd-pop-close").onclick = e => {
+      e.stopPropagation();
+      $("countdown-pop").classList.remove("open", "pop-anim");
+    };
+    function applyCountdownDate(val, closePop = true) {
+      countdownDate = (val || "").trim();
+      playSfx(countdownDate ? "check" : "drop");
+      renderCountdownUI();
+      saveSubgroupsRemote();
+      if (closePop) $("countdown-pop").classList.remove("open", "pop-anim");
+    }
+    $("cd-date-in").addEventListener("change", e => {
+      if (e.target.value) applyCountdownDate(e.target.value, false);
+    });
+    $("cd-save-btn").onclick = e => {
+      e.stopPropagation();
+      applyCountdownDate($("cd-date-in").value, true);
+    };
+    $("cd-clr-btn").onclick = e => {
+      e.stopPropagation();
+      $("cd-date-in").value = "";
+      applyCountdownDate("", true);
+    };
+    setInterval(renderCountdownUI, 60000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) renderCountdownUI() });
+
     function renderUserBar() {
       getAllWhos();
       if (!curUser && collabs.length) {
@@ -2513,6 +2710,7 @@
       const n = cur();
       if (n && $("who-av-btn")) fillAvatarEl($("who-av-btn"), n.who, "📷");
       renderTimerUI();
+      renderCountdownUI();
       updateOnlinePeersUI();
     }
 
@@ -3134,6 +3332,7 @@
             }
           }
           if (p.avatars && typeof p.avatars === "object") avatars = { ...p.avatars };
+          if (typeof p.countdownDate === "string") countdownDate = p.countdownDate.trim();
           if (p.workSecs && typeof p.workSecs === "object") {
             const nextWork = {};
             Object.keys(p.workSecs).forEach(k => {
@@ -3144,13 +3343,14 @@
         }
         subgroups.forEach((sg, i) => { sg.color = normalizeColor(sg.color || COLORS[i % COLORS.length]) });
         Object.keys(catColors).forEach(k => { catColors[k] = normalizeColor(catColors[k]) });
+        if (typeof renderCountdownUI === "function") renderCountdownUI();
         if (persistLocal) {
-          try { localStorage.setItem(KEY + "-subs", JSON.stringify({ subs: subgroups, catColors, subCols, collabs, avatars, workSecs })) } catch (e) { }
+          try { localStorage.setItem(KEY + "-subs", JSON.stringify({ subs: subgroups, catColors, subCols, collabs, avatars, workSecs, countdownDate })) } catch (e) { }
         }
       } catch (e) { }
     }
     async function saveSubgroupsRemote() {
-      const payload = { subs: subgroups, catColors, subCols, collabs, avatars, workSecs };
+      const payload = { subs: subgroups, catColors, subCols, collabs, avatars, workSecs, countdownDate };
       try { localStorage.setItem(KEY + "-subs", JSON.stringify(payload)) } catch (e) { }
       if (!sb) return;
       await sb.from("notes").upsert({
@@ -4269,6 +4469,7 @@
       if (!e.target.closest("#me-dd") && !e.target.closest("#me-sel-btn")) $("me-dd").classList.remove("open");
       if ($("user-pop").classList.contains("open") && !e.target.closest("#user-pop") && !e.target.closest("#add-user-btn") && !e.target.closest("#me-dd")) closeUserPop();
       if ($("rank-pop").classList.contains("open") && !e.target.closest("#rank-pop") && !e.target.closest("#trophy-btn")) $("rank-pop").classList.remove("open", "pop-anim");
+      if ($("countdown-pop").classList.contains("open") && !e.target.closest("#countdown-wrap")) $("countdown-pop").classList.remove("open", "pop-anim");
     });
     function paintSw() {
       const n = cur();
