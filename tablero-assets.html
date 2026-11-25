@@ -60,10 +60,64 @@
       font-size: 18px;
       font-weight: 800;
       letter-spacing: -0.3px;
-      margin: 0 6px 0 0;
-      display: flex;
+      margin: 0;
+      display: inline-flex;
       align-items: center;
-      gap: 7px
+      gap: 7px;
+      cursor: pointer;
+      padding: 4px 9px;
+      border-radius: 10px;
+      border: 2px solid transparent;
+      user-select: none;
+      transition: background .12s, border-color .12s, transform .12s, box-shadow .12s
+    }
+
+    h1:hover {
+      background: #fffdf9;
+      border-color: var(--line);
+      box-shadow: 2px 3px 0 var(--shd);
+      transform: translate(-1px, -1px)
+    }
+
+    h1 .title-edit-ico {
+      font-size: 12px;
+      opacity: .45;
+      transition: opacity .12s
+    }
+
+    h1:hover .title-edit-ico {
+      opacity: 1
+    }
+
+    .title-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      margin-right: 2px
+    }
+
+    .title-pop {
+      position: absolute;
+      top: calc(100% + 9px);
+      left: 0;
+      width: 276px;
+      background: var(--panel);
+      border: 2px solid #181715;
+      border-radius: 15px;
+      box-shadow: 5px 7px 0 var(--shd);
+      padding: 11px 13px 13px;
+      display: none;
+      flex-direction: column;
+      gap: 9px;
+      z-index: 85
+    }
+
+    .title-pop.open {
+      display: flex
+    }
+
+    .title-pop.pop-anim {
+      animation: panelPop .22s cubic-bezier(.2, 1.45, .35, 1)
     }
 
     button,
@@ -1853,7 +1907,28 @@
       }
 
       header h1 {
+        font-size: 13.5px;
+        padding: 3px 6px;
+        gap: 4px;
+        max-width: 135px
+      }
+
+      header h1 #app-title-txt {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap
+      }
+
+      header h1 .title-edit-ico {
         display: none
+      }
+
+      .title-pop {
+        position: fixed;
+        left: 12px !important;
+        right: 12px !important;
+        top: 62px !important;
+        width: auto !important
       }
 
       #add {
@@ -2051,8 +2126,34 @@
   <header id="hdr">
     <button type="button" class="ghost mob-only" id="mob-sub-btn" style="padding:6px 9px"
       title="Abrir subgrupos">📂</button>
-    <h1><img src="favicon.png" alt="" width="20" height="20" style="object-fit:contain;flex-shrink:0"
-        onerror="this.style.display='none'">Postit Tristes</h1>
+    <div class="title-wrap" id="title-wrap">
+      <h1 id="app-title-btn" title="Clic para cambiar el título o abrir otra versión independiente">
+        <img src="favicon.png" alt="" width="20" height="20" style="object-fit:contain;flex-shrink:0"
+          onerror="this.style.display='none'">
+        <span id="app-title-txt">Postit Tristes</span>
+        <span class="title-edit-ico">✎</span>
+      </h1>
+      <div class="title-pop" id="title-pop" aria-label="Título y versión del tablero">
+        <div class="panel-top">
+          <span class="panel-grip" style="cursor:default">🏷️ Título de la página</span>
+          <button type="button" class="panel-x" id="tpop-close" title="Cerrar">✕</button>
+        </div>
+        <label>Nombre de este tablero
+          <input id="tpop-in" autocomplete="off" placeholder="Ej. Postit Tristes, Notas Blender…">
+        </label>
+        <button type="button" class="btn" id="tpop-save" style="justify-content:center">Guardar título</button>
+        <div style="border-top:2px dashed rgba(24,23,21,.18);margin:2px 0"></div>
+        <label>🔗 Abrir otra versión (data independiente)
+          <div class="row" style="gap:5px;margin-top:2px">
+            <input id="tpop-space-in" autocomplete="off" placeholder="Ej. personal, blender, godot…"
+              style="font-size:12.5px;padding:6px 8px">
+            <button type="button" class="ghost" id="tpop-space-go" style="flex:0 0 auto;padding:6px 10px;font-size:12px"
+              title="Abrir link de esa versión en otra pestaña">Abrir ↗</button>
+          </div>
+        </label>
+        <div id="tpop-space-info" style="font-size:11px;color:var(--mute);line-height:1.35"></div>
+      </div>
+    </div>
     <button class="btn" id="add" title="Atajo: N o doble clic en una columna">+<span class="add-txt"> Nueva
         nota</span></button>
     <button type="button" class="ghost mob-only" id="mob-tools-btn" style="padding:6px 9px"
@@ -2273,8 +2374,41 @@
   <script>
     const DEFAULT_SB_URL = "https://ejfhjzbqjryndtbltmty.supabase.co";
     const DEFAULT_SB_KEY = "sb_publishable_4aMksgd002k2kdQXstVHPA_d2UxH2NT";
-    const META_ID = 999999999;
-    const META_BOARD = "__meta_subgrupos__";
+
+    // --- Soporte Multi-Versión / Espacios Independientes por Link (?espacio=nombre) o nombre de archivo .html ---
+    function detectSpaceId() {
+      try {
+        const sp = new URLSearchParams(location.search);
+        const rawParam = (sp.get("espacio") || sp.get("space") || sp.get("v") || "").trim();
+        if (rawParam) {
+          return rawParam.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9_-]+/g, "-").replace(/^-|-$/g, "");
+        }
+        const fname = (location.pathname.split("/").pop() || "").toLowerCase().replace(/\.html?$/i, "");
+        if (fname && fname !== "tablero-assets" && fname !== "index") {
+          return fname.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9_-]+/g, "-").replace(/^-|-$/g, "");
+        }
+      } catch (e) { }
+      return "";
+    }
+    function strHash(s) {
+      let h = 2166136261;
+      for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+      return Math.abs(h);
+    }
+    const SPACE_ID = detectSpaceId();
+    const META_ID = SPACE_ID ? (900000000 + (strHash("meta::" + SPACE_ID) % 98000000)) : 999999999;
+    const META_BOARD = SPACE_ID ? (`__meta_subgrupos__${SPACE_ID}`) : "__meta_subgrupos__";
+    function dbBoard(subId) {
+      return SPACE_ID ? `${SPACE_ID}::${subId}` : subId;
+    }
+    function fromDbBoard(rawBoard) {
+      if (!rawBoard || rawBoard === META_BOARD || rawBoard.startsWith("__meta_subgrupos__")) return null;
+      if (SPACE_ID) {
+        const pref = SPACE_ID + "::";
+        return rawBoard.startsWith(pref) ? rawBoard.slice(pref.length) : null;
+      }
+      return rawBoard.includes("::") ? null : rawBoard;
+    }
 
     const DRIVE_SVG = `<svg viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>`;
 
@@ -2313,8 +2447,13 @@
       return c;
     }
     const PEER_COLORS = ["#e03131", "#1971c2", "#2f9e44", "#9c36b5", "#f08c00", "#0c8599"];
-    const KEY = "tablero-assets-v2", CFG_KEY = "tablero-assets-cfg-v1", USER_KEY = "tablero-user-v1";
+    const KEY = SPACE_ID ? `tablero-assets-v2-${SPACE_ID}` : "tablero-assets-v2";
+    const CFG_KEY = "tablero-assets-cfg-v1";
+    const USER_KEY = SPACE_ID ? `tablero-user-v1-${SPACE_ID}` : "tablero-user-v1";
 
+    let appTitle = SPACE_ID
+      ? ("Postits · " + SPACE_ID.charAt(0).toUpperCase() + SPACE_ID.slice(1).replace(/[-_]+/g, " "))
+      : "Postit Tristes";
     let subgroups = [
       { id: "principal", name: "📋 General", color: COLORS[0] },
       { id: "mecanicas", name: "⚙️ Mecánicas", color: COLORS[1] },
@@ -2354,8 +2493,9 @@
       return Math.max(0, Math.min(mc - 1, Math.round(((x || 0) - COL_X0) / COL_STEP)));
     }
     function defaultTitleId(subId, c) {
+      const key = dbBoard(subId);
       let h = 2166136261;
-      for (let i = 0; i < subId.length; i++) h = Math.imul(h ^ subId.charCodeAt(i), 16777619);
+      for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619);
       return (Math.abs(h) % 80000000) * 100 + c + 1;
     }
     function getNumCols() {
@@ -2699,6 +2839,72 @@
     setInterval(renderCountdownUI, 60000);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) renderCountdownUI() });
 
+    function renderTitleUI() {
+      const txtEl = $("app-title-txt");
+      const clean = (appTitle || "").trim() || (SPACE_ID ? ("Postits · " + SPACE_ID) : "Postit Tristes");
+      appTitle = clean;
+      if (txtEl) txtEl.textContent = clean;
+      document.title = clean;
+    }
+
+    $("app-title-btn").onclick = e => {
+      e.stopPropagation();
+      const pop = $("title-pop");
+      const open = !pop.classList.contains("open");
+      if (open) {
+        playSfx("pickup");
+        $("tpop-in").value = appTitle;
+        $("tpop-space-in").value = SPACE_ID;
+        $("tpop-space-info").textContent = SPACE_ID
+          ? `Estás en la versión "${SPACE_ID}" (data 100% separada). Déjalo vacío y dale Abrir para volver al tablero principal.`
+          : `Escribe cualquier nombre (ej. "personal" o "blender") para abrir un link con su propia data y título independiente.`;
+        pop.classList.remove("pop-anim");
+        pop.classList.add("open");
+        void pop.offsetWidth;
+        pop.classList.add("pop-anim");
+        setTimeout(() => { $("tpop-in").focus(); $("tpop-in").select() }, 35);
+      } else {
+        pop.classList.remove("open", "pop-anim");
+      }
+    };
+    $("tpop-close").onclick = e => {
+      e.stopPropagation();
+      $("title-pop").classList.remove("open", "pop-anim");
+    };
+    function applyNewAppTitle() {
+      const val = ($("tpop-in").value || "").trim() || "Postit Tristes";
+      appTitle = val;
+      playSfx("check");
+      renderTitleUI();
+      saveSubgroupsRemote();
+      $("title-pop").classList.remove("open", "pop-anim");
+    }
+    $("tpop-save").onclick = e => {
+      e.stopPropagation();
+      applyNewAppTitle();
+    };
+    $("tpop-in").addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); applyNewAppTitle() }
+      else if (e.key === "Escape") { e.preventDefault(); $("title-pop").classList.remove("open", "pop-anim") }
+    });
+    function openSpaceLink() {
+      const raw = ($("tpop-space-in").value || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9_-]+/g, "-").replace(/^-|-$/g, "");
+      const url = new URL(location.href);
+      url.searchParams.delete("space");
+      url.searchParams.delete("v");
+      if (raw) url.searchParams.set("espacio", raw);
+      else url.searchParams.delete("espacio");
+      window.open(url.toString(), "_blank");
+      $("title-pop").classList.remove("open", "pop-anim");
+    }
+    $("tpop-space-go").onclick = e => {
+      e.stopPropagation();
+      openSpaceLink();
+    };
+    $("tpop-space-in").addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); openSpaceLink() }
+    });
+
     function renderUserBar() {
       getAllWhos();
       if (!curUser && collabs.length) {
@@ -2711,6 +2917,7 @@
       if (n && $("who-av-btn")) fillAvatarEl($("who-av-btn"), n.who, "📷");
       renderTimerUI();
       renderCountdownUI();
+      renderTitleUI();
       updateOnlinePeersUI();
     }
 
@@ -2864,9 +3071,12 @@
           }
         } catch (e) { }
       });
-      // Limpiar en Supabase TODAS las notas (de cualquier subgrupo) que tuvieran asignado ese nombre
+      // Limpiar en Supabase las notas de este espacio que tuvieran asignado ese nombre
       if (sb) {
-        try { await sb.from("notes").update({ who: "" }).eq("who", targetDel) } catch (e) { }
+        try {
+          const spaceBoards = subgroups.map(sg => dbBoard(sg.id));
+          await sb.from("notes").update({ who: "" }).eq("who", targetDel).in("board", spaceBoards);
+        } catch (e) { }
       }
       if (curUser === targetDel) setActiveUser(collabs[0] || "");
       await saveSubgroupsRemote();
@@ -3333,6 +3543,7 @@
           }
           if (p.avatars && typeof p.avatars === "object") avatars = { ...p.avatars };
           if (typeof p.countdownDate === "string") countdownDate = p.countdownDate.trim();
+          if (typeof p.appTitle === "string" && p.appTitle.trim()) appTitle = p.appTitle.trim();
           if (p.workSecs && typeof p.workSecs === "object") {
             const nextWork = {};
             Object.keys(p.workSecs).forEach(k => {
@@ -3344,13 +3555,14 @@
         subgroups.forEach((sg, i) => { sg.color = normalizeColor(sg.color || COLORS[i % COLORS.length]) });
         Object.keys(catColors).forEach(k => { catColors[k] = normalizeColor(catColors[k]) });
         if (typeof renderCountdownUI === "function") renderCountdownUI();
+        if (typeof renderTitleUI === "function") renderTitleUI();
         if (persistLocal) {
-          try { localStorage.setItem(KEY + "-subs", JSON.stringify({ subs: subgroups, catColors, subCols, collabs, avatars, workSecs, countdownDate })) } catch (e) { }
+          try { localStorage.setItem(KEY + "-subs", JSON.stringify({ subs: subgroups, catColors, subCols, collabs, avatars, workSecs, countdownDate, appTitle })) } catch (e) { }
         }
       } catch (e) { }
     }
     async function saveSubgroupsRemote() {
-      const payload = { subs: subgroups, catColors, subCols, collabs, avatars, workSecs, countdownDate };
+      const payload = { subs: subgroups, catColors, subCols, collabs, avatars, workSecs, countdownDate, appTitle };
       try { localStorage.setItem(KEY + "-subs", JSON.stringify(payload)) } catch (e) { }
       if (!sb) return;
       await sb.from("notes").upsert({
@@ -3547,7 +3759,7 @@
       allNotesMeta[n.id] = { board: targetBoard, who: wName, st: stVal };
       if (subFilterMine) renderSubgroups();
       if (!sb) return;
-      const row = { id: n.id, board: targetBoard, t: n.t || "", cat: n.cat || "", who: n.who || "", st: stVal, link: n.link || "", body: n.body || "", color: n.color || COLORS[0], x: Math.round(n.x || 0), y: Math.round(n.y || 0), updated_at: new Date().toISOString() };
+      const row = { id: n.id, board: dbBoard(targetBoard), t: n.t || "", cat: n.cat || "", who: n.who || "", st: stVal, link: n.link || "", body: n.body || "", color: n.color || COLORS[0], x: Math.round(n.x || 0), y: Math.round(n.y || 0), updated_at: new Date().toISOString() };
       pendingRows[n.id] = row;
       clearTimeout(saveTimers[n.id]);
       saveTimers[n.id] = setTimeout(async () => {
@@ -3571,7 +3783,7 @@
       if (!sb) return;
       const reqId = ++cloudReqId;
       try {
-        const { data, error } = await sb.from("notes").select("*").eq("board", targetSub).order("id", { ascending: true });
+        const { data, error } = await sb.from("notes").select("*").eq("board", dbBoard(targetSub)).order("id", { ascending: true });
         if (error) throw error;
         if (reqId !== cloudReqId || curSub !== targetSub) return;
         Object.keys(allNotesMeta).forEach(k => { if (allNotesMeta[k]?.board === targetSub) delete allNotesMeta[k] });
@@ -3614,15 +3826,17 @@
           await saveSubgroupsRemote();
         }
 
-        // Cargar todos los responsables y subgrupos de todas las notas
+        // Cargar todos los responsables y subgrupos de todas las notas de este espacio
         const { data: allWhoRows } = await sb.from("notes").select("id,board,who,st").neq("id", META_ID);
         if (Array.isArray(allWhoRows)) {
           allNotesWho = {};
           allNotesMeta = {};
           allWhoRows.forEach(r => {
+            const localSub = fromDbBoard(r.board);
+            if (!localSub) return;
             const nid = Number(r.id), w = (r.who || "").trim(), stVal = r.st === "titulo" ? "titulo" : "";
             if (w) allNotesWho[nid] = w;
-            allNotesMeta[nid] = { board: r.board, who: w, st: stVal };
+            allNotesMeta[nid] = { board: localSub, who: w, st: stVal };
           });
         }
         renderUserBar();
@@ -3630,7 +3844,8 @@
 
         await fetchSubgroupNotes(curSub);
 
-        channel = sb.channel("room-global", { config: { broadcast: { self: false } } })
+        const roomName = SPACE_ID ? `room-global-${SPACE_ID}` : "room-global";
+        channel = sb.channel(roomName, { config: { broadcast: { self: false } } })
           .on("postgres_changes", { event: "*", schema: "public", table: "notes" }, payload => {
             const r = payload.new || payload.old;
             if (r && Number(r.id) === META_ID && payload.new?.body) {
@@ -3653,10 +3868,12 @@
               if (subFilterMine) renderSubgroups();
             } else if (payload.new) {
               const nr = payload.new;
+              const localSub = fromDbBoard(nr.board);
+              if (!localSub) return;
               const nid = Number(nr.id), w = (nr.who || "").trim(), stVal = nr.st === "titulo" ? "titulo" : "";
               if (w) allNotesWho[nid] = w; else delete allNotesWho[nid];
-              allNotesMeta[nid] = { board: nr.board, who: w, st: stVal };
-              if (nr.board === curSub) {
+              allNotesMeta[nid] = { board: localSub, who: w, st: stVal };
+              if (localSub === curSub) {
                 const incoming = { id: nid, t: nr.t, cat: nr.cat, who: nr.who, st: stVal, link: nr.link, body: nr.body, color: nr.cat ? getCatColor(nr.cat, nr.color) : nr.color, x: nr.x, y: nr.y };
                 const idx = S.notes.findIndex(n => n.id === incoming.id);
                 if (idx >= 0) S.notes[idx] = incoming; else S.notes.push(incoming);
@@ -4470,6 +4687,7 @@
       if ($("user-pop").classList.contains("open") && !e.target.closest("#user-pop") && !e.target.closest("#add-user-btn") && !e.target.closest("#me-dd")) closeUserPop();
       if ($("rank-pop").classList.contains("open") && !e.target.closest("#rank-pop") && !e.target.closest("#trophy-btn")) $("rank-pop").classList.remove("open", "pop-anim");
       if ($("countdown-pop").classList.contains("open") && !e.target.closest("#countdown-wrap")) $("countdown-pop").classList.remove("open", "pop-anim");
+      if ($("title-pop").classList.contains("open") && !e.target.closest("#title-wrap")) $("title-pop").classList.remove("open", "pop-anim");
     });
     function paintSw() {
       const n = cur();
